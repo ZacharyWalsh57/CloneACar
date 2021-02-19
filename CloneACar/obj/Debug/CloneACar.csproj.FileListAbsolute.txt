@@ -1,0 +1,14 @@
+C:\Users\zwals\source\repos\ZacharyWalsh57\CloneACar\CloneACar\bin\Debug\CloneACar.exe
+C:\Users\zwals\source\repos\ZacharyWalsh57\CloneACar\CloneACar\bin\Debug\CloneACar.pdb
+C:\Users\zwals\source\repos\ZacharyWalsh57\CloneACar\CloneACar\obj\Debug\CloneACar.csprojAssemblyReference.cache
+C:\Users\zwals\source\repos\ZacharyWalsh57\CloneACar\CloneACar\obj\Debug\MainWindow.g.cs
+C:\Users\zwals\source\repos\ZacharyWalsh57\CloneACar\CloneACar\obj\Debug\App.g.cs
+C:\Users\zwals\source\repos\ZacharyWalsh57\CloneACar\CloneACar\obj\Debug\CloneACar_MarkupCompile.cache
+C:\Users\zwals\source\repos\ZacharyWalsh57\CloneACar\CloneACar\obj\Debug\CloneACar_MarkupCompile.lref
+C:\Users\zwals\source\repos\ZacharyWalsh57\CloneACar\CloneACar\obj\Debug\MainWindow.baml
+C:\Users\zwals\source\repos\ZacharyWalsh57\CloneACar\CloneACar\obj\Debug\CloneACar.g.resources
+C:\Users\zwals\source\repos\ZacharyWalsh57\CloneACar\CloneACar\obj\Debug\CloneACar.Properties.Resources.resources
+C:\Users\zwals\source\repos\ZacharyWalsh57\CloneACar\CloneACar\obj\Debug\CloneACar.csproj.GenerateResource.cache
+C:\Users\zwals\source\repos\ZacharyWalsh57\CloneACar\CloneACar\obj\Debug\CloneACar.csproj.CoreCompileInputs.cache
+C:\Users\zwals\source\repos\ZacharyWalsh57\CloneACar\CloneACar\obj\Debug\CloneACar.exe
+C:\Users\zwals\source\repos\ZacharyWalsh57\CloneACar\CloneACar\obj\Debug\CloneACar.pdb

@@ -1,0 +1,22 @@
+   Failed to load Toshiba DLL, using Windows Bluetooth API
+++ 0.000s PTOpen(00000000, 16C15508)
+   pName: <NULL>
+   Library Version: CarDAQ-Plus 3 J2534 Library v1.0.42.0
+   Registry specifies a default: 'USB\VID_18E1&PID_1002\CMUA20000012399D'
+     CarDAQ-Plus 3 #012399
+     USB\VID_18E1&PID_1002\CMUA20000012399D
+   returning DeviceID 3
+++ 0.000s PTGetNextCarDAQ(00000000, 0135EC90, 00000000)
+** 0.062s PTReadVersion(3, 03C1A904, 03C1A960, 03C1A9BC)
+   DLL: CarDAQ-Plus 3 J2534 Library v1.0.42.0
+   API: 04.04
+   FW:  CarDAQ-Plus 3 FW:0.1.0.22 BL:0.1.0.7 SN: CMUA20000012399D
+** 0.062s PTIoctl(3, 3:READ_VBATT, 00000000, 017653C0)
+   Battery Voltage 17.900000 V
+
+-----------------------------------------------------------------------------
+
+1) PTOpen Device Selected
+2) PTGetNextCarDAQ --> Store DeviceID
+3) PTReadVerison --> Store Device Info
+4) PTIoctl READ_VBATT --> Store Voltage

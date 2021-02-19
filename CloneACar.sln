@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30914.41
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CloneACar", "CloneACar\CloneACar.csproj", "{030709DE-3D94-4E69-9F0A-9CA6AA80D7AD}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{030709DE-3D94-4E69-9F0A-9CA6AA80D7AD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{030709DE-3D94-4E69-9F0A-9CA6AA80D7AD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{030709DE-3D94-4E69-9F0A-9CA6AA80D7AD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{030709DE-3D94-4E69-9F0A-9CA6AA80D7AD}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {F7F85315-6BCD-4C55-9E9E-3253F536A60D}
+	EndGlobalSection
+EndGlobal
