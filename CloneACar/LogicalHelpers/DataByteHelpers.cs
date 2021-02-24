@@ -97,7 +97,8 @@ namespace CloneACar.LogicalHelpers
             GenerationTimer.Start();
 
             // Write Address info here.
-            AppLogger.WriteLog($"GETTING MESSAGES AT ADDRESS \"{ConvertDataToString(DiagBusBytes, true)}\" FOR ALL STANDARD PIDS...");
+            // AppLogger.WriteLog($"GETTING MESSAGES AT ADDRESS \"{ConvertDataToString(DiagBusBytes, true)}\" FOR ALL STANDARD PIDS...");
+            MessageWriter?.WriteMessageLog($"GETTING MESSAGES AT ADDRESS \"{ConvertDataToString(DiagBusBytes, true)}\" FOR ALL STANDARD PIDS...");
 
             // Loop all PID objects and make address commands.
             var Options = new ParallelOptions() { MaxDegreeOfParallelism = 100 };
@@ -132,12 +133,18 @@ namespace CloneACar.LogicalHelpers
             // Write messages out to a JSON file now.
             SavePassThruMessages Saver = new SavePassThruMessages(DiagBusBytes, Protocol);
             AppLogger.WriteLog($"SAVING TO JSON FILE NOW. FILE NAME: {Saver.FileName}");
+            MessageWriter?.WriteMessageLog($"SAVING TO JSON FILE NOW. FILE NAME: {Saver.FileName}");
             Saver.SaveGeneratedMessages(AllMessagesToSend);
 
             // Log Time Taken.
             AppLogger.WriteLog($"COMPLETED ADDRESS SET {ConvertDataToString(DiagBusBytes)} IN {GenerationTimer.Elapsed.ToString("g")}");
             AppLogger.WriteLog($"FOUND A TOTAL OF {AllMessagesToSend.Count} MESSAGES HAVE BEEN GENERATED");
-            AppLogger.WriteLog("THIS SHOULD BE CONSISTENT ACROSS ALL ADDRESSES");
+            AppLogger.WriteLog("THIS SHOULD BE CONSISTENT ACROSS ALL ADDRESSES\n");
+
+            MessageWriter?.WriteMessageLog($"COMPLETED ADDRESS SET {ConvertDataToString(DiagBusBytes)} IN {GenerationTimer.Elapsed.ToString("g")}");
+            MessageWriter?.WriteMessageLog($"FOUND A TOTAL OF {AllMessagesToSend.Count} MESSAGES HAVE BEEN GENERATED");
+            MessageWriter?.WriteMessageLog("THIS SHOULD BE CONSISTENT ACROSS ALL ADDRESSES");
+
             GenerationTimer.Stop();
 
             // Convert the list to an array and return out.
@@ -168,23 +175,25 @@ namespace CloneACar.LogicalHelpers
 
                 // Add to list of strings and get our perms from the split string item.
                 // Store perm 0 to be added to again and used for new perm setup.
-                var PermHelper = new PermutationHelper(ByteString, MessageStart);
-                BytesOfMessage = PermHelper.NextBaseMessage;
-
-                // Add all the found perms into the list of all values and remove dupes.
-                AllValuesConverted.AddRange(PermHelper.FinalMessages);
-
-                // Write msgs to log file. Moved to write log out when done combining messages.
-                if (Debugger.IsAttached)
+                try
                 {
-                    MessageLogger?.WriteMessageLog($"MADE {PermHelper.FinalMessages.Count} " +
-                                                   $"MESSAGES FROM --> {PermHelper.FinalMessages[0]}",
-                                                  MessageLogTypes.MessageTypes.CLNE_MSG);
+                    var PermHelper = new PermutationHelper(ByteString, MessageStart);
+                    BytesOfMessage = PermHelper.NextBaseMessage;
+
+                    // Add all the found perms into the list of all values and remove dupes.
+                    AllValuesConverted.AddRange(PermHelper.FinalMessages);
+
+                    // Write msgs to log file. Moved to write log out when done combining messages.
+                    // MessageLogger?.WriteMessageLog($"MADE {PermHelper.FinalMessages.Count} " +
+                    //                                $"MESSAGES FROM --> {PermHelper.FinalMessages[0]}",
+                    //                                   MessageLogTypes.MessageTypes.CLNE_MSG);
+
+
+                    // Check for MaxSize
+                    KeepSearching = ByteString != MaxString;
+                    if (!KeepSearching) { break; }
                 }
-                
-                // Check for MaxSize
-                KeepSearching = ByteString != MaxString;
-                if (!KeepSearching) { break; }
+                catch { }
             }
 
             // Return the list of strings.

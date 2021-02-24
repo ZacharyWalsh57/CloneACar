@@ -108,7 +108,7 @@ namespace CloneACar.J2534Consumer.VehicleCloning
             // Log Counts here.
             AppLogger.WriteLog("STARTING GENERATION OF ALL MESSAGES FOR ALL ADDRESSES ON THE CAN BUS");
             AppLogger.WriteLog("WILL TAKE A LONG TIME. FRANKLY, I HAVE NO IDEA HOW LONG BUT LONG.");
-            AppLogger.WriteLog($"ADDRESSES: {BusAddresses.Count} --- THREADS: {SplitBusAddresses.Count} --- KICKING OFF NOW...\n");
+            AppLogger.WriteLog($"ADDRESSES: {BusAddresses.Count} --- THREADS: {SplitBusAddresses.Count} --- KICKING OFF NOW...");
 
             // Make a timer to time this whole thing.
             Stopwatch GenerationTimer = new Stopwatch();
