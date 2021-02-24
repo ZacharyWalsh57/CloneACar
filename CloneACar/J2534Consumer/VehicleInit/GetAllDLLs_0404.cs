@@ -38,7 +38,7 @@ namespace CloneACar.J2534Consumer.VehicleInit
 
             // Append dlls into the DLLModels now.
             if (UpdateDLLModels(out var DLLInitStatus)) return;
-            AppLogger.WriteLog($"FAILED TO INIT DLLS LIST. ERROR: {DLLInitStatus}", LogTypes.LogItemType.ERROR);
+            AppLogger.WriteLog($"FAILED TO INIT DLLS LIST. ERROR: {DLLInitStatus}", TextLogTypes.LogItemType.ERROR);
         }
 
         public bool UpdateDLLModels(out VehicleInitEnums.DLLInitStatus InitStatus)
@@ -46,7 +46,7 @@ namespace CloneACar.J2534Consumer.VehicleInit
             // If no DLLS found return false.
             if (DLLs.Count == 0)
             {
-                AppLogger.WriteLog("NO DLLS FOUND ON THIS MACHINE FOR THE V0404 API", LogTypes.LogItemType.ERROR);
+                AppLogger.WriteLog("NO DLLS FOUND ON THIS MACHINE FOR THE V0404 API", TextLogTypes.LogItemType.ERROR);
                 InitStatus = VehicleInitEnums.DLLInitStatus.NO_DLLS_FOUND;
 
                 return false;
@@ -77,11 +77,11 @@ namespace CloneACar.J2534Consumer.VehicleInit
             SelectedDLL = DLLs[0];
             SelectedDLLModel = DLLModels[0];
 
-            AppLogger.WriteLog("DLL INDEX: " + DLLIndex, LogTypes.LogItemType.EXEOK);
-            AppLogger.WriteLog("SELECTED DLL: " + SelectedDLL.LongName, LogTypes.LogItemType.EXEOK);
-            AppLogger.WriteLog("DLL IS VERSION O404 AND EXISTS. THIS IS OUR DEFAULT FOR NOW", LogTypes.LogItemType.EXEOK);
+            AppLogger.WriteLog("DLL INDEX: " + DLLIndex, TextLogTypes.LogItemType.EXEOK);
+            AppLogger.WriteLog("SELECTED DLL: " + SelectedDLL.LongName, TextLogTypes.LogItemType.EXEOK);
+            AppLogger.WriteLog("DLL IS VERSION O404 AND EXISTS. THIS IS OUR DEFAULT FOR NOW", TextLogTypes.LogItemType.EXEOK);
 
-            AppLogger.WriteLog("ADDED ALL V0404 DLLS TO THE DLL MODEL OBJECTS OK!", LogTypes.LogItemType.EXEOK);
+            AppLogger.WriteLog("ADDED ALL V0404 DLLS TO THE DLL MODEL OBJECTS OK!", TextLogTypes.LogItemType.EXEOK);
             return true;
         }
     }

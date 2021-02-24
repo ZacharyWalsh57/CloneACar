@@ -12,3 +12,6 @@ C:\Users\zwals\source\repos\ZacharyWalsh57\CloneACar\CloneACar\obj\Debug\CloneAC
 C:\Users\zwals\source\repos\ZacharyWalsh57\CloneACar\CloneACar\obj\Debug\CloneACar.csproj.CoreCompileInputs.cache
 C:\Users\zwals\source\repos\ZacharyWalsh57\CloneACar\CloneACar\obj\Debug\CloneACar.exe
 C:\Users\zwals\source\repos\ZacharyWalsh57\CloneACar\CloneACar\obj\Debug\CloneACar.pdb
+C:\Users\zwals\source\repos\ZacharyWalsh57\CloneACar\CloneACar\bin\Debug\Newtonsoft.Json.dll
+C:\Users\zwals\source\repos\ZacharyWalsh57\CloneACar\CloneACar\bin\Debug\Newtonsoft.Json.xml
+C:\Users\zwals\source\repos\ZacharyWalsh57\CloneACar\CloneACar\obj\Debug\CloneACar.csproj.CopyComplete

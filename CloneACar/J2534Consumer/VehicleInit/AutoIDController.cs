@@ -13,7 +13,6 @@ using CloneACar.Models;
 
 // Globals
 using static CloneACar.GlobalObjects;
-using static CloneACar.GlobalObjects.Version0404Objects;
 
 namespace CloneACar.J2534Consumer.VehicleInit
 {
@@ -30,7 +29,7 @@ namespace CloneACar.J2534Consumer.VehicleInit
         {
             if (TryISO15765()) { return true; }
 
-            AppLogger.WriteLog("UNABLE TO PULL A VIN NUMBER FROM THE VEHICLE. THIS ISNT GOOD", LogTypes.LogItemType.ERROR);
+            AppLogger.WriteLog("UNABLE TO PULL A VIN NUMBER FROM THE VEHICLE. THIS ISNT GOOD", TextLogTypes.LogItemType.ERROR);
             return false;
         }
 
@@ -47,8 +46,8 @@ namespace CloneACar.J2534Consumer.VehicleInit
                 ProtocolFound = ProtocolId.ISO15765;
                 VIN_NUMBER = VIN;
 
-                AppLogger.WriteLog("GOT A GOOD VIN NUMBER FROM THE 11 BIT CAN CONTROLLER", LogTypes.LogItemType.EXEOK);
-                AppLogger.WriteLog($"VIN NUMBER IS RECORDED AS: {VIN}", LogTypes.LogItemType.EXEOK);
+                AppLogger.WriteLog("GOT A GOOD VIN NUMBER FROM THE 11 BIT CAN CONTROLLER", TextLogTypes.LogItemType.EXEOK);
+                AppLogger.WriteLog($"VIN NUMBER IS RECORDED AS: {VIN}", TextLogTypes.LogItemType.EXEOK);
 
                 VehicleCloner = new VehicleCloningController(this);
                 return true;

@@ -11,35 +11,35 @@ using CloneACar.Models;
 
 // Globals
 using static CloneACar.GlobalObjects;
-using static CloneACar.GlobalObjects.Version0404Objects;
 
 namespace CloneACar.J2534Consumer.VehicleInit.AutoIDMethods
 {
     public class AutoID_CAN11BIT
-    {
+    {       
+        /// <summary>
+        /// This is the J2534 Device opened from our device discovery setup.
+        /// Since it's kinda hard to pass this thing around, use this to snag it from globals.
+        /// </summary>
         private J2534Device Device
         {
-            get { return SelectedHW.GetDeviceValues<J2534Device>(); }
-            set { SelectedHW.SetDeviceValues(Device); }
+            get { return HardwareConfig.SelectedHW.GetDeviceValues<J2534Device>(); }
+            set { HardwareConfig.SelectedHW.SetDeviceValues(Device); }
         }
 
         public string VIN_NUMBER;
         public PassThruMsg[] ModeOnePidZero;
         public PassThruMsg[] VinNumberMessages;
 
+        private readonly Logger VinLogger11Bit;
+ 
         public AutoID_CAN11BIT()
         {
             // Log whats going on.
+            VinLogger11Bit = new Logger(true, "ISO15765-11BIT", "AUTO_ID");
             AppLogger.WriteLog("SETTING UP FOR 11 BIT AUTO ID. SETTING DEVICE OBJECT NOW");
 
             // Open the device and connect to an 11bit can channel.
-            if (!Device.isOpen) { Device.PTOpen(Device.name); }
-            if (Device.channels[0] != null)
-                if (Device.channels[0].protocol != ProtocolId.ISO15765)
-                    Device.PTDisconnect(0);
-            if (Device.channels[0] == null)
-                Device.PTConnect(0, ProtocolId.ISO15765, 0x00, 500000);
-
+            WrappedCommands.OpenDevice(ProtocolId.ISO15765, 0x00, 500000);
 
             // AutoID Process can now be attempted.
             AppLogger.WriteLog("11 BIT CAN CHANNEL WAS OPENED AND CONNECTED OK. READY TO RUN AUTO ID PROCESS NOW");
@@ -60,7 +60,7 @@ namespace CloneACar.J2534Consumer.VehicleInit.AutoIDMethods
             AppLogger.WriteLog($"DEVICE CONNECTED AND OPEN. CHANNEL ID {ChannelID}");
 
             // Setup all flow control filters.
-            SetupStandardFlowCtl(Device.channels[0].channelId);
+            WrappedCommands.Setup11BitFlowCtl(ChannelID, 0x40);
             AppLogger.WriteLog("ALL FLOW CONTROL FILTERS ARE NOW SETUP OK.");
 
             // Clear TX and RX buffers.
@@ -69,13 +69,13 @@ namespace CloneACar.J2534Consumer.VehicleInit.AutoIDMethods
             // Run DF 01
             ModeOnePidZero = WrappedCommands.WriteAndRead(
                 ChannelID, ProtocolId.ISO15765, "00 00 07 DF 01 00",
-                0x40, 8);
+                0x40, 8, VinLogger11Bit);
             AppLogger.WriteLog("SENT AND RECEIVE DONE FOR MODE ONE PID 0");
 
             // Run 09 02
             VinNumberMessages = WrappedCommands.WriteAndRead(
                 ChannelID, ProtocolId.ISO15765, "00 00 07 DF 09 02",
-                0x40, 8);
+                0x40, 8, VinLogger11Bit);
             AppLogger.WriteLog("SENT AND RECEIVE DONE FOR VIN NUMBER");
 
             // Write messages to logs and pull vin out.
@@ -88,8 +88,10 @@ namespace CloneACar.J2534Consumer.VehicleInit.AutoIDMethods
                 VIN_NUMBER = VIN;
 
                 Device.PTDisconnect(0);
-                AppLogger.WriteLog($"FOUND A VIN OK! GOT A NEW VIN AS {VIN}", LogTypes.LogItemType.EXEOK);
-                AppLogger.WriteLog($"CLOSED DOWN THE CAN CHANNEL USED FOR AUTOID. MOVING ON", LogTypes.LogItemType.EXEOK);
+                AppLogger.WriteLog($"FOUND A VIN OK! GOT A NEW VIN AS {VIN}", TextLogTypes.LogItemType.EXEOK);
+                AppLogger.WriteLog($"CLOSED DOWN THE CAN CHANNEL USED FOR AUTOID. MOVING ON", TextLogTypes.LogItemType.EXEOK);
+
+                // VinLogger11Bit.WriteLog("VIN NUMBER FOUND OK! --> " + VIN, TextLogTypes.LogItemType.EXEOK);
                 return true;
             }
 
@@ -99,22 +101,6 @@ namespace CloneACar.J2534Consumer.VehicleInit.AutoIDMethods
 
             Device.PTDisconnect(0);
             return false;
-        }
-
-
-        public void SetupStandardFlowCtl(uint ChannelID, uint Flags = 0x40)
-        {
-            int StartPattern = (int)0xE8;
-            int StartFlowCtl = (int)0xE0;
-
-            for (int Value = 0; Value < 8; Value++)
-            {
-                string Mask = "FF FF FF FF";
-                string Pattern = "00 00 07 " + String.Format("{0:X}", StartPattern + Value);
-                string Flow = "00 00 07 " + String.Format("{0:X}", StartFlowCtl + Value);
-
-                WrappedCommands.SetupFlowCtlFilter(ChannelID, ProtocolId.ISO15765, Flags, Mask, Pattern, Flow);
-            }
         }
     }
 }

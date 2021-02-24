@@ -50,6 +50,9 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Newtonsoft.Json, Version=12.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>..\packages\Newtonsoft.Json.12.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Data" />
     <Reference Include="System.Xml" />
@@ -88,7 +91,10 @@
     <Compile Include="J2534Consumer\VehicleInit\VehicleInitEnums.cs" />
     <Compile Include="J2534Consumer\WrappedCommands.cs" />
     <Compile Include="LoggingHelpers\Logger.cs" />
-    <Compile Include="LoggingHelpers\LogTypes.cs" />
+    <Compile Include="LoggingHelpers\SavePassThruMessages.cs" />
+    <Compile Include="LoggingHelpers\TextLogTypes.cs" />
+    <Compile Include="LogicalHelpers\DataByteHelpers.cs" />
+    <Compile Include="LogicalHelpers\PermutationHelpers.cs" />
     <Compile Include="MinimalJ2534\Verison0500\Exceptions\AppException.cs" />
     <Compile Include="MinimalJ2534\Verison0500\J2534\Device1InstalledDlls.cs" />
     <Compile Include="MinimalJ2534\Verison0500\J2534\Device2InstalledDlls.cs" />
@@ -146,7 +152,10 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Models\MessageSentAndResponse.cs" />
+    <Compile Include="Models\StrippedPTMessage.cs" />
     <Compile Include="Models\Verison0404_DLLModel.cs" />
+    <Compile Include="Models\Version0404Hardware.cs" />
     <Compile Include="Models\Version0404_ActiveHW.cs" />
     <Compile Include="Models\Version0404_DeviceModel.cs" />
     <Compile Include="Properties\AssemblyInfo.cs">
@@ -166,6 +175,7 @@
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
+    <None Include="packages.config" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>

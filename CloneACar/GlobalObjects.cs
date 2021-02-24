@@ -13,28 +13,15 @@ namespace CloneACar
 {
     public class GlobalObjects
     {
-        public static Logger AppLogger;         // App logger object.
-        public static string VersionNumber;     // Version of this app.
-
-        // Class for any and all V0404 related object creation and use.
-        public static class Version0404Objects
-        {
-            public static GetAllDLLs_0404 V0404DLLs;            // Init for V0404 DLL objects. Contains model object for all DLLs found.
-            public static GetAllDevices_0404 V0404Devices;      // All Devices found for the setup DLL Value.
-
-            public static List<Version0404_DLLAndDevice> PairedDLLsAndDevices;  // List of all usable Hardware.
-            public static Version0404_DLLAndDevice SelectedHW;                  // Final picked HW items.  Call SelectedHW.GetDeviceValues to pull info from the J2534Device object.
-        }
+        public static Logger AppLogger;             // App logger object.
 
         public static string VIN_NUMBER;                                       // VIN of the attached car.
+        public static V0404Hardware HardwareConfig;                            // Hardware selected for this run.
         public static AutoIDController AutoID = new AutoIDController();        // Used to autoid a connected vehicle if wanted.
         public static VehicleCloningController VehicleCloner;                  // Used for cloning vehicles.
 
         public GlobalObjects()
         {
-            // Get Version Number.
-            VersionNumber = GetVersionInfo();
-
             // Init the logger.
             AppLogger = new Logger();
             AppLogger.WriteLog("LOGGER OBJECT WAS SETUP OK!");
@@ -43,35 +30,24 @@ namespace CloneACar
             SetupV0404DLLsAndDevices();
         }
 
-        private static string GetVersionInfo()
-        {
-            Version VersionValue = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
-            DateTime BuildDate = new DateTime(2000, 1, 1)
-                .AddDays(VersionValue.Build).AddSeconds(VersionValue.Revision * 2);
-
-            string DisplayVersion = $"{VersionValue} ({BuildDate})";
-            return DisplayVersion;
-        }
-
+        /// <summary>
+        /// Setup new V0404 Device and DLL object.
+        /// This picks the first found DLL and device and stores them in the Version0404Objects class.
+        /// </summary>
         private static void SetupV0404DLLsAndDevices()
         {
+            // Init the HW object. This holds all DLLs, All Devices, 
+            // along with the selected DLL and Device. This is accessed 
+            // by HardwareConfig.SelectedHW
+            HardwareConfig = new V0404Hardware();
+
+            // Init the DLL objects
             AppLogger.WriteLog("SETTING UP DLL OBJECT NOW...");
-            Version0404Objects.V0404DLLs = new GetAllDLLs_0404();
+            HardwareConfig.V0404DLLs = new GetAllDLLs_0404();
 
+            // Init the Device objects.
             AppLogger.WriteLog("SETTING UP DEVICES OBJECT NOW");
-            Version0404Objects.V0404Devices = new GetAllDevices_0404();
-        }
-
-        public static string ConvertDataToString(byte[] DataToConvert)
-        {
-            StringBuilder HexString = new StringBuilder(DataToConvert.Length * 2);
-            foreach (byte ByteItem in DataToConvert)
-            {
-                HexString.Append("0x");
-                HexString.AppendFormat("{0:x2} ".ToUpper(), ByteItem);
-            }
-
-            return  HexString.ToString();
+            HardwareConfig.V0404Devices = new GetAllDevices_0404();
         }
     }
 }

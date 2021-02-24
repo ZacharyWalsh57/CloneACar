@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace CloneACar.LoggingHelpers
 {
-    public class LogTypes
+    public class TextLogTypes
     {
         public enum LogItemType
         {
@@ -15,6 +15,19 @@ namespace CloneACar.LoggingHelpers
             WARNS,
             ERROR,
             EXEOK,
+        }
+    }
+
+    public class MessageLogTypes
+    {
+        public enum MessageTypes
+        {
+            PT_WRITE,
+            PT_READS,
+            PT_MESSG,
+            VIN_NUMB,
+            CLNE_MSG,
+            FAIL_MSG
         }
     }
 }

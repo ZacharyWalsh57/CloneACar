@@ -50,7 +50,7 @@ namespace CloneACar.Models
             }
             catch (J2534Exception Ex)
             {
-                GlobalObjects.AppLogger.WriteLog($"ERROR WHILE PULLING ONE OR MORE VALUES! --> {Ex.Message}", LogTypes.LogItemType.ERROR);
+                GlobalObjects.AppLogger.WriteLog($"ERROR WHILE PULLING ONE OR MORE VALUES! --> {Ex.Message}", TextLogTypes.LogItemType.ERROR);
                 GlobalObjects.AppLogger.WriteErrorLog(Ex);
             }
 

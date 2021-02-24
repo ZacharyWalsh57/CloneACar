@@ -12,15 +12,11 @@ using CloneACar.Models;
 
 // Globals
 using static CloneACar.GlobalObjects;
-using static CloneACar.GlobalObjects.Version0404Objects;
 
 namespace CloneACar.J2534Consumer.VehicleInit
 {
     public class GetAllDevices_0404
     {
-        public Version0404_DeviceModel SelectedDevice;              // Selected V0404 Device object.
-        public List<Version0404_DeviceModel> V0404DeviceModels;     // All V0404 devices for the specified DLL AS MODELS!
-
         // API Cast Device types. List of Devices and a single device we picked.
         #region  DEVICES FROM THE API. PRIVATE NORMALLY SO SOME MAGIC IS NEEDED
         private List<J2534Device> V0404Devices { get; set; }        // List of all installed V0404 Devices
@@ -47,8 +43,8 @@ namespace CloneACar.J2534Consumer.VehicleInit
             AppLogger.WriteLog("SETTING UP DEVICE INSTANCES NOW");
 
             // Just use our global object for the DLL stuff I think...
-            if (V0404DLLs == null) { V0404DLLs = new GetAllDLLs_0404(); }
-            AppLogger.WriteLog("DLLS WERE IMPORTED TO THIS CLASS OK! GETTING DEVICES NOW", LogTypes.LogItemType.EXEOK);
+            if (HardwareConfig.V0404DLLs == null) { HardwareConfig.V0404DLLs = new GetAllDLLs_0404(); }
+            AppLogger.WriteLog("DLLS WERE IMPORTED TO THIS CLASS OK! GETTING DEVICES NOW", TextLogTypes.LogItemType.EXEOK);
 
             // Find Devices here.
             FindAllDevices();
@@ -56,11 +52,11 @@ namespace CloneACar.J2534Consumer.VehicleInit
 
         public void FindAllDevices()
         {
-            PairedDLLsAndDevices = new List<Version0404_DLLAndDevice>();
+            HardwareConfig.PairedDLLsAndDevices = new List<Version0404_DLLAndDevice>();
             var NextDevices = new List<Version0404_DeviceModel>();
 
             // Loop all the DLLs and append them to the CombinedV0404 DLLs and Devices.
-            foreach (var DLLEntry in V0404DLLs.DLLs)
+            foreach (var DLLEntry in HardwareConfig.V0404DLLs.DLLs)
             {
                 AppLogger.WriteLog($"CHECKING DLL: {DLLEntry.LongName}");
                 if (!FindDevicesForDLL(DLLEntry, out NextDevices)) { continue; }
@@ -68,27 +64,29 @@ namespace CloneACar.J2534Consumer.VehicleInit
                 foreach (var DeviceItem in NextDevices)
                 {
                     AppLogger.WriteLog($"APPENDING DEVICE {DeviceItem.DeviceName} NOW");
+                    var DLLModel = HardwareConfig.V0404DLLs.DLLModels[HardwareConfig.V0404DLLs.DLLs.IndexOf(DLLEntry)];
                     var PairedHW = new Version0404_DLLAndDevice
                     {
                         DLL = DLLEntry,
-                        DLLModel = V0404DLLs.DLLModels[V0404DLLs.DLLs.IndexOf(DLLEntry)],
+                        DLLModel = DLLModel,
                         DeviceModel = DeviceItem,
                     };
 
                     PairedHW.SetupNewDevice(DLLEntry);
-                    PairedDLLsAndDevices.Add(PairedHW);
+                    HardwareConfig.PairedDLLsAndDevices.Add(PairedHW);
                 }
             }
 
-            if (PairedDLLsAndDevices.Count == 0)
+            if (HardwareConfig.PairedDLLsAndDevices.Count == 0)
             {
                 AppLogger.WriteLog("FAILED TO FIND ANY USABLE DLLS OR DEVICES. CLOSING NOW");
                 Environment.Exit(0);
             }
 
-            SelectedHW = PairedDLLsAndDevices[0];
-            var DeviceMade = SelectedHW.GetDeviceValues<J2534Device>();
+            HardwareConfig.SelectedHW = HardwareConfig.PairedDLLsAndDevices[0];
+            var DeviceMade = HardwareConfig.SelectedHW.GetDeviceValues<J2534Device>();
 
+            var SelectedHW = HardwareConfig.SelectedHW;
             AppLogger.WriteLog("-------------------------------------------------------------------------------------------------------------------------");
             AppLogger.WriteLog($"\n\nDEVICE DETAILS\n   \\__ NAME: {DeviceMade.name}\n   \\__ ID: {DeviceMade.deviceId}\n   " + 
                                $"\\__ CONNECTED: {DeviceMade.isConnected}\n   \\__ SN: {SelectedHW.DeviceModel.SerialNumber}\n   " +
@@ -96,7 +94,7 @@ namespace CloneACar.J2534Consumer.VehicleInit
             
             AppLogger.WriteLog($"\n\nDLL INFO\n   \\__ NAME: {DeviceMade.Jdll.LongName}\n  " +
                                $" \\__ VENDOR: {DeviceMade.Jdll.Vendor}\n   " +
-                               $"\\__ SUPPORTED PROCS: {DeviceMade.Jdll.SupportedProtocols.Count}\n", LogTypes.LogItemType.EXEOK);
+                               $"\\__ SUPPORTED PROCS: {DeviceMade.Jdll.SupportedProtocols.Count}\n", TextLogTypes.LogItemType.EXEOK);
             AppLogger.WriteLog("-------------------------------------------------------------------------------------------------------------------------");
         }
 
@@ -125,13 +123,13 @@ namespace CloneACar.J2534Consumer.VehicleInit
                     });
                 }
 
-                AppLogger.WriteLog($"FOUND A TOTAL OF {DevicesFound.Count} DEVICES FOR THIS DLL", LogTypes.LogItemType.EXEOK);
+                AppLogger.WriteLog($"FOUND A TOTAL OF {DevicesFound.Count} DEVICES FOR THIS DLL", TextLogTypes.LogItemType.EXEOK);
                 return true;
             }
 
             catch (Exception ex)
             {
-                AppLogger.WriteLog($"FAILED TO SETUP DEVICES FOR DLL {SelectedDLL.LongName}", LogTypes.LogItemType.ERROR);
+                AppLogger.WriteLog($"FAILED TO SETUP DEVICES FOR DLL {SelectedDLL.LongName}", TextLogTypes.LogItemType.ERROR);
                 AppLogger.WriteErrorLog(ex);
 
                 DevicesFound = null;

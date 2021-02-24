@@ -34,9 +34,6 @@ namespace CloneACar
             // people only have a single PT device hooked up this will usually be more than ok.
             var Globals = new GlobalObjects();
 
-            // Pull the AUTO ID methods up.
-            AutoID = new AutoIDController();
-
             // If we can AutoID Ok, then we need to clone.
             // This is gonna be changed based on the vehicle protocol once all cloning classes are done.
             if (AutoID.TryAutoID()) { VehicleCloner.Clone15765_11Bit(); }
