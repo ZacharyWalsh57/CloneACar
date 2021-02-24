@@ -55,8 +55,8 @@ namespace CloneACar.J2534Consumer.VehicleCloning
             if (!GenerateAllMessages()) { return; }
 
             // Init the FlowCtl Filters for this channel.
-            uint Channel = Device.channels[0].channelId;
-            WrappedCommands.Setup11BitFlowCtl(Channel);
+            WrappedCommands.OpenDevice(ProtocolId.ISO15765, 0x00, 500000);
+            WrappedCommands.Setup11BitFlowCtl(Device.channels[0].channelId);
         }
 
 
