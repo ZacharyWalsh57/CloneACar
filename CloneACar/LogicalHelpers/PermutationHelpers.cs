@@ -24,23 +24,27 @@ namespace CloneACar.LogicalHelpers
             FoundPerms = new List<string>();
 
             // Run next perm setup here and add only string values not seen to list of all perms.
-            var PermResults = PermString.GetPermutations().ToList();
-            foreach (var PermArray in PermResults)
+            try
             {
-                string FinalPermString = string.Join(" ", PermArray);
-                if (!FoundPerms.Contains(FinalPermString))
+                var PermResults = PermString.GetPermutations().ToList();
+                foreach (var PermArray in PermResults)
                 {
-                    FoundPerms.Add(FinalPermString);
-                    FinalMessages.Add(MessageStart + " " + FinalPermString);
+                    string FinalPermString = string.Join(" ", PermArray);
+                    if (!FoundPerms.Contains(FinalPermString))
+                    {
+                        FoundPerms.Add(FinalPermString);
+                        FinalMessages.Add(MessageStart + " " + FinalPermString);
+                    }
                 }
-            }
 
-            // Make final list dupe less and set final perm list.
-            string NoSpacesPerm = FoundPerms[0].Replace(" ", String.Empty);
-            NextBaseMessage = Enumerable.Range(0, NoSpacesPerm.Length)
-                .Where(x => x % 2 == 0)
-                .Select(x => Convert.ToByte(NoSpacesPerm.Substring(x, 2), 16))
-                .ToArray();
+                // Make final list dupe less and set final perm list.
+                string NoSpacesPerm = FoundPerms[0].Replace(" ", String.Empty);
+                NextBaseMessage = Enumerable.Range(0, NoSpacesPerm.Length)
+                    .Where(x => x % 2 == 0)
+                    .Select(x => Convert.ToByte(NoSpacesPerm.Substring(x, 2), 16))
+                    .ToArray();
+            }
+            catch { }
         }
     }
 

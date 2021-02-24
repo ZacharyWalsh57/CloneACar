@@ -101,7 +101,7 @@ namespace CloneACar.LogicalHelpers
             MessageWriter?.WriteMessageLog($"GETTING MESSAGES AT ADDRESS \"{ConvertDataToString(DiagBusBytes, true)}\" FOR ALL STANDARD PIDS...");
 
             // Loop all PID objects and make address commands.
-            var Options = new ParallelOptions() { MaxDegreeOfParallelism = 100 };
+            var Options = new ParallelOptions() { MaxDegreeOfParallelism = 5 };
             Parallel.ForEach(ListOfPids, Options, (PidItem) =>
             {            
                 // Stopwatch for pid threads.
