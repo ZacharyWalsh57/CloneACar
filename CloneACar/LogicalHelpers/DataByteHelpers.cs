@@ -72,20 +72,6 @@ namespace CloneACar.LogicalHelpers
 
             #endregion
 
-            // If we already have a JSON, dont remake it.
-            string PathOfJSON = 
-                $@"C:\Drewtech\CloneACar\CloneACar_JSON_Messages" +
-                $@"\{Protocol}" +
-                $@"\CloneACar_{ConvertDataToString(DiagBusBytes).Substring(1).
-                    Replace(" ", String.Empty).Trim()}" +
-                $@"_{Protocol}.json";
-
-            if (File.Exists(PathOfJSON))
-            {
-                // This needs to be changed so it knows how to read in the JSON File.
-                return new PassThruMsg[0];
-            }
-
             // List of all PTMessages. This gets converted into an array on return.
             List<PassThruMsg> AllMessagesToSend = new List<PassThruMsg>();
 
@@ -103,17 +89,9 @@ namespace CloneACar.LogicalHelpers
             // Loop all PID objects and make address commands.
             var Options = new ParallelOptions() { MaxDegreeOfParallelism = 5 };
             Parallel.ForEach(ListOfPids, Options, (PidItem) =>
-            {            
-                // Stopwatch for pid threads.
-                Stopwatch PIDTimer = new Stopwatch();
-                PIDTimer.Start();
-                
+            {
                 // Make a byte array here containing the 0x00 0x00, Address bytes, and PID value and store as string.
                 string PidAndAddress = ConvertDataToString(new byte[5] { 00, 00, DiagBusBytes[0], DiagBusBytes[1], PidItem });
-                string AddressOnly = ConvertDataToString(DiagBusBytes);
-                string PidString = ConvertDataToString(new byte[1] {PidItem});
-
-                // Get all new byte strings.
                 var NewMessages = GetNextSequence(MaxMsgLen, PidAndAddress, MessageWriter);
 
                 // Loop all the strings and make messages based on the string values.
@@ -122,12 +100,6 @@ namespace CloneACar.LogicalHelpers
                     var NextPTMsg = J2534Device.CreatePTMsgFromString(ProtocolId.ISO15765, 0x40, Message);
                     AllMessagesToSend.Add(NextPTMsg);
                 }
-
-                // Log the messages to temp file and info for the run. THIS WRITE TAKES A BIT OF TIME.
-                // AppLogger.WriteLog($"FOR CMD {PidAndAddress} MADE A TOTAL OF {NewMessages.Count} MESSAGES"); 
-                // AppLogger.WriteLog($"NOW HAVE A TOTAL OF {AllMessagesToSend.Count} MESSAGES TO SEND OUT");
-                // AppLogger.WriteLog($"COMPLETED ALL MESSAGES FOR {PidAndAddress} IN ABOUT {PIDTimer.Elapsed:g}");
-                // PIDTimer.Stop();
             });
 
             // Write messages out to a JSON file now.
@@ -143,7 +115,7 @@ namespace CloneACar.LogicalHelpers
 
             MessageWriter?.WriteMessageLog($"COMPLETED ADDRESS SET {ConvertDataToString(DiagBusBytes)} IN {GenerationTimer.Elapsed.ToString("g")}");
             MessageWriter?.WriteMessageLog($"FOUND A TOTAL OF {AllMessagesToSend.Count} MESSAGES HAVE BEEN GENERATED");
-            MessageWriter?.WriteMessageLog("THIS SHOULD BE CONSISTENT ACROSS ALL ADDRESSES");
+            MessageWriter?.WriteMessageLog("THIS SHOULD BE CONSISTENT ACROSS ALL ADDRESSES\n");
 
             GenerationTimer.Stop();
 
@@ -177,17 +149,12 @@ namespace CloneACar.LogicalHelpers
                 // Store perm 0 to be added to again and used for new perm setup.
                 try
                 {
+                    // Get the perms of the next message
                     var PermHelper = new PermutationHelper(ByteString, MessageStart);
                     BytesOfMessage = PermHelper.NextBaseMessage;
 
                     // Add all the found perms into the list of all values and remove dupes.
                     AllValuesConverted.AddRange(PermHelper.FinalMessages);
-
-                    // Write msgs to log file. Moved to write log out when done combining messages.
-                    // MessageLogger?.WriteMessageLog($"MADE {PermHelper.FinalMessages.Count} " +
-                    //                                $"MESSAGES FROM --> {PermHelper.FinalMessages[0]}",
-                    //                                   MessageLogTypes.MessageTypes.CLNE_MSG);
-
 
                     // Check for MaxSize
                     KeepSearching = ByteString != MaxString;

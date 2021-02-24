@@ -42,6 +42,7 @@ namespace CloneACar.J2534Consumer.VehicleCloning
 
             // Open the device and connect to an 11bit can channel then close it so we dont waste resources keeping it open.
             WrappedCommands.OpenDevice(ProtocolId.ISO15765, 0x00, 500000);
+            Device.PTDisconnect(0);
 
             // AutoID Process can now be attempted.
             AppLogger.WriteLog("11 BIT CAN CHANNEL WAS OPENED AND CONNECTED OK. READY TO RUN CLONING PROCESS NOW");
@@ -52,7 +53,6 @@ namespace CloneACar.J2534Consumer.VehicleCloning
         { 
             // Make all 11 Bit CAN Messages here.
             if (!GenerateAllMessages()) { return; }
-            Device.PTClose();
 
             // Init the FlowCtl Filters for this channel.
             uint Channel = Device.channels[0].channelId;
