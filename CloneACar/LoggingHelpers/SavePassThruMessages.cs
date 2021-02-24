@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using CloneACar.LogicalHelpers;
 using CloneACar.Models;
 
 // JSON 
@@ -22,23 +23,25 @@ namespace CloneACar.LoggingHelpers
 {
     public class SavePassThruMessages
     {
-        public string PathToFileBase = @"C:\Drewtech\CloneACar\CloneACar_JSON_Messages";
-        public string PathToSavedComms = @"C:\Drewtech\CloneACar\CloneACar_SavedComms";
-
+        public string PathToFileBase;
         public string FullFileName;
         public string FileName;
         public string Address;
 
-        public PassThruMsg[] MessagesToSave;
-        public StringMessagePairs MessagePairsToSave;
+        public byte[] AddressByte;
 
-        public SavePassThruMessages(byte[] AddressBytes, string Protocol)
+        public SavePassThruMessages(string Protocol, byte[] AddressBytes)
         {
-            Address = ConvertDataToString(AddressBytes).Substring(1).Replace(" ", String.Empty).Trim();
-            FileName = $"CloneACar_{Address}_{Protocol}.json";
+            var Paths = AppConfigHelper.ReturnDebugPaths();
+            PathToFileBase = Paths[1].Item2;
+
+            AddressByte = AddressBytes;
+            Address = ConvertDataToString(AddressBytes).Replace(" ", String.Empty).Trim();
+            FileName = $"Address_{Address}_{Protocol}.json";
+
             FullFileName = PathToFileBase + $"\\{Protocol}\\{FileName}";
 
-            string JSONDir = PathToFileBase + $"\\{Protocol}";
+            string JSONDir = PathToFileBase + $"{Protocol}";
             if (!Directory.Exists(JSONDir))
             {
                 Directory.CreateDirectory(PathToFileBase + $"\\{Protocol}");
@@ -48,58 +51,31 @@ namespace CloneACar.LoggingHelpers
             if (!File.Exists(FullFileName)) { File.Create(FullFileName); }
             AppLogger.WriteLog($"SET UP A NEW MESSAGE WRITER. FILE {FileName}");
         }
-        public SavePassThruMessages(StringMessagePairs MessagesToSave, string Protocol)
-        {
-            MessagePairsToSave = MessagesToSave;
-
-            Address = MessagesToSave.SendAddress.Substring(1).Replace(" ", String.Empty).Trim() +
-                      MessagesToSave.ReceiveAddress.Substring(1).Replace(" ", String.Empty).Trim(); ;
-
-            FileName = $"CloneACar_SavedComms_{Address}_{Protocol}.json";
-            FullFileName = PathToSavedComms + $"\\{Protocol}\\{FileName}";
-
-            string SavedCommsDir = PathToSavedComms + $"\\{Protocol}";
-            if (!Directory.Exists(SavedCommsDir))
-            {
-                Directory.CreateDirectory(PathToSavedComms + $"\\{Protocol}");
-                AppLogger.WriteLog($"DIRECTORY FOR SAVED COMMS MADE OK");
-            }
-
-            if (!File.Exists(FullFileName)) { File.Create(FullFileName); }
-            AppLogger.WriteLog($"SET UP A NEW COMMS SAVER. FILE {FileName}");
-        }
 
         public void SaveGeneratedMessages(List<PassThruMsg> AllMessagesToSave)
         {
-            // Set the messages to save as an array.
-            MessagesToSave = AllMessagesToSave.ToArray();
-
-            // Generate string JSON versions here.
-            var AllStringMessages = new List<StrippedPTMessage>();
-            foreach (var PTMessage in MessagesToSave)
-            {
-                if (PTMessage == null) { continue; }
-
-                var StringifiedMessage = new StrippedPTMessage(PTMessage);
-                AllStringMessages.Add(StringifiedMessage);
-            }
-
-            // Make JSON String now.
-            string FullJSONString = JsonConvert.SerializeObject(AllStringMessages);
+            // Message Set object and JSON it.
+            var ProcID = AllMessagesToSave[0].protocolId;
+            PassThruMessageSet MessageSet = new PassThruMessageSet(ProcID, AddressByte, AllMessagesToSave);
+            string FullJSONString = JsonConvert.SerializeObject(MessageSet);
 
             // Write the file contents out now.
-            try
+            while (true)
             {
-                var FileToWrite = new FileStream(FullFileName, FileMode.Append, FileAccess.Write, FileShare.ReadWrite);
-                var FileStreamWriter = new StreamWriter((Stream)FileToWrite);
+                try
+                {
+                    var FileToWrite = new FileStream(FullFileName, FileMode.Append, FileAccess.Write, FileShare.ReadWrite);
+                    var FileStreamWriter = new StreamWriter((Stream)FileToWrite);
 
-                FileStreamWriter.WriteLine(FullJSONString);
+                    FileStreamWriter.WriteLine(FullJSONString);
 
-                FileStreamWriter.Close();
-                FileToWrite.Close();
+                    FileStreamWriter.Close();
+                    FileToWrite.Close();
+
+                    return;
+                }
+                catch { System.Threading.Thread.Sleep(1000); }
             }
-            catch { }
-
         }
     }
 }

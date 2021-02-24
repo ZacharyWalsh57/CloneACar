@@ -5,10 +5,13 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using CloneACar.J2534Consumer;
 using CloneACar.LoggingHelpers;
+using CloneACar.Models;
 
 // V0404 API
 using Minimal_J2534_0404;
+using Newtonsoft.Json;
 
 // Global Objects.
 using static CloneACar.GlobalObjects;
@@ -16,7 +19,18 @@ using static CloneACar.GlobalObjects;
 namespace CloneACar.LogicalHelpers
 {
     public class DataByteHelpers
-    {
+    {       
+        /// <summary>
+        /// Used to convert a byte array into a string object.
+        /// </summary>
+        /// <param name="DataToConvert">Converts these bytes to string.</param>
+        /// <param name="UseZeroX">Use the 0x prefix for the string. (0x08 vs 08)</param>
+        /// <returns></returns>
+        public static string ConvertDataToString(byte DataByte, bool UseZeroX = false)
+        {
+            byte[] DataBytes = new byte[1] { DataByte };
+            return ConvertDataToString(DataBytes);
+        }
         /// <summary>
         /// Used to convert a byte array into a string object.
         /// </summary>
@@ -25,14 +39,32 @@ namespace CloneACar.LogicalHelpers
         /// <returns></returns>
         public static string ConvertDataToString(byte[] DataToConvert, bool UseZeroX = false)
         {
-            StringBuilder HexString = new StringBuilder(DataToConvert.Length * 2);
-            foreach (byte ByteItem in DataToConvert)
+            try
             {
-                if (UseZeroX) { HexString.Append("0x"); }
-                HexString.AppendFormat("{0:x2} ".ToUpper(), ByteItem);
+                StringBuilder HexString = new StringBuilder(DataToConvert.Length * 2);
+                foreach (byte ByteItem in DataToConvert)
+                {
+                    if (UseZeroX) { HexString.Append("0x"); }
+                    HexString.AppendFormat("{0:x2} ".ToUpper(), ByteItem);
+                }
+                return HexString.ToString().Trim();
             }
+            catch { return ConvertDataToString(DataToConvert, UseZeroX); }
+        }
+        /// <summary>
+        /// Converts a hex string item to a byte array.
+        /// </summary>
+        /// <param name="InputString">String to send in for the conversion WITHOUT 0x</param>
+        /// <returns>byte converted version of the input string.</returns>
+        public static byte[] ConvertDataToByte(string InputString)
+        {
+            string NoSpacesPerm = InputString.Replace(" ", String.Empty).Replace("0x", String.Empty);
+            byte[] NextMessage = Enumerable.Range(0, NoSpacesPerm.Length)
+                .Where(x => x % 2 == 0)
+                .Select(x => Convert.ToByte(NoSpacesPerm.Substring(x, 2), 16))
+                .ToArray();
 
-            return HexString.ToString().Trim();
+            return NextMessage;
         }
 
 
@@ -42,7 +74,7 @@ namespace CloneACar.LogicalHelpers
         /// <param name="DiagBusBytes">Address to make commands for</param>
         /// <param name="MessageWriter">Logger object to write logs with. Can be null</param>
         /// <returns></returns>
-        public static PassThruMsg[] GenerateMessagesForAddress(string Protocol, int MaxMsgLen, byte[] DiagBusBytes, Logger MessageWriter = null)
+        public static PassThruMessageSet GenerateMessagesForAddress(ProtocolId Protocol, int MaxMsgLen, byte[] DiagBusBytes, uint MessageFlags, Logger MessageWriter = null)
         {
             #region How This Works
 
@@ -72,6 +104,60 @@ namespace CloneACar.LogicalHelpers
 
             #endregion
 
+            #region File Exists
+
+            // Check for file exist.
+            string ProtocolString = (Protocol + "").Trim();
+            if (MessageFlags == 0x100 && Protocol == ProtocolId.CAN) { ProtocolString += "_29BIT"; }
+            if (MessageFlags == 0x40 && Protocol == ProtocolId.ISO15765) { ProtocolString += "_11BIT"; }
+
+            // Get Value for Path to JSON and make address string.
+            var Paths = AppConfigHelper.ReturnDebugPaths();
+            string Address = ConvertDataToString(DiagBusBytes).Replace(" ", String.Empty).Trim();
+            string FileName = $"Address_{Address}_{ProtocolString}.json";
+
+            // Only do this if the file we need doesn't exist.
+            string FilePath = $"{Paths[1].Item2}{ProtocolString}\\{FileName}";
+            if (File.Exists(FilePath))
+            {
+                var SizeOfFile = new FileInfo(FilePath).Length;
+                if (SizeOfFile == 0) { File.Delete(FilePath); }
+            }
+
+            if (File.Exists(FilePath))
+            {
+                // Stopwatch for All threads.
+                Stopwatch ImportGenTimer = new Stopwatch();
+                ImportGenTimer.Start();
+
+                // Log File was found ok.
+                AppLogger.WriteLog($"ADDRESS FILE FOUND FOR {Address}. JSON PARSING IT NOW...");
+                MessageWriter?.WriteMessageLog($"ADDRESS FILE FOUND FOR {Address}. JSON PARSING IT NOW...");
+
+                // Convert the JSON to string messages
+                PassThruMessageSet JSONMsgSet;
+                using (StreamReader FileReader = File.OpenText(FilePath))
+                {
+                    JsonSerializer DeserializerObject = new JsonSerializer();
+                    JSONMsgSet = (PassThruMessageSet)DeserializerObject.Deserialize(FileReader, typeof(PassThruMessageSet));
+                }
+
+                // Log time stats to the debug logs.
+                AppLogger.WriteLog($"COMPLETED ADDRESS SET {ConvertDataToString(DiagBusBytes)} IN {ImportGenTimer.Elapsed.ToString("g")}");
+                AppLogger.WriteLog($"FOUND A TOTAL OF {JSONMsgSet.Messages.Count} MESSAGES HAVE BEEN GENERATED");
+                AppLogger.WriteLog("THIS SHOULD BE CONSISTENT ACROSS ALL ADDRESSES");
+
+                MessageWriter?.WriteMessageLog($"COMPLETED ADDRESS SET {ConvertDataToString(DiagBusBytes)} IN {ImportGenTimer.Elapsed.ToString("g")}");
+                MessageWriter?.WriteMessageLog($"FOUND A TOTAL OF {JSONMsgSet.Messages.Count} MESSAGES HAVE BEEN GENERATED");
+                MessageWriter?.WriteMessageLog("THIS SHOULD BE CONSISTENT ACROSS ALL ADDRESSES");
+
+                // Feed back the message list.
+                return JSONMsgSet;
+            }
+            #endregion
+
+            #region File Does Not Exist
+
             // List of all PTMessages. This gets converted into an array on return.
             List<PassThruMsg> AllMessagesToSend = new List<PassThruMsg>();
 
@@ -90,20 +176,26 @@ namespace CloneACar.LogicalHelpers
             var Options = new ParallelOptions() { MaxDegreeOfParallelism = 5 };
             Parallel.ForEach(ListOfPids, Options, (PidItem) =>
             {
+                // Make First MsgBytes
+                byte[] FirstBytes = new byte[0];
+                if (Protocol == ProtocolId.ISO15765)
+                    if (!ProtocolString.Contains("29BIT")) { FirstBytes = new byte[5] { 00, 00, DiagBusBytes[0], DiagBusBytes[1], PidItem }; }
+                    else { FirstBytes = new byte[5] { 00, 00, DiagBusBytes[0], DiagBusBytes[1], PidItem }; }
+
                 // Make a byte array here containing the 0x00 0x00, Address bytes, and PID value and store as string.
-                string PidAndAddress = ConvertDataToString(new byte[5] { 00, 00, DiagBusBytes[0], DiagBusBytes[1], PidItem });
+                string PidAndAddress = ConvertDataToString(FirstBytes);
                 var NewMessages = GetNextSequence(MaxMsgLen, PidAndAddress, MessageWriter);
 
                 // Loop all the strings and make messages based on the string values.
                 foreach (var Message in NewMessages)
                 {
-                    var NextPTMsg = J2534Device.CreatePTMsgFromString(ProtocolId.ISO15765, 0x40, Message);
+                    var NextPTMsg = J2534Device.CreatePTMsgFromString(Protocol, MessageFlags, Message);
                     AllMessagesToSend.Add(NextPTMsg);
                 }
             });
 
             // Write messages out to a JSON file now.
-            SavePassThruMessages Saver = new SavePassThruMessages(DiagBusBytes, Protocol);
+            SavePassThruMessages Saver = new SavePassThruMessages(ProtocolString, DiagBusBytes);
             AppLogger.WriteLog($"SAVING TO JSON FILE NOW. FILE NAME: {Saver.FileName}");
             MessageWriter?.WriteMessageLog($"SAVING TO JSON FILE NOW. FILE NAME: {Saver.FileName}");
             Saver.SaveGeneratedMessages(AllMessagesToSend);
@@ -111,16 +203,19 @@ namespace CloneACar.LogicalHelpers
             // Log Time Taken.
             AppLogger.WriteLog($"COMPLETED ADDRESS SET {ConvertDataToString(DiagBusBytes)} IN {GenerationTimer.Elapsed.ToString("g")}");
             AppLogger.WriteLog($"FOUND A TOTAL OF {AllMessagesToSend.Count} MESSAGES HAVE BEEN GENERATED");
-            AppLogger.WriteLog("THIS SHOULD BE CONSISTENT ACROSS ALL ADDRESSES\n");
+            AppLogger.WriteLog("THIS SHOULD BE CONSISTENT ACROSS ALL ADDRESSES");
 
             MessageWriter?.WriteMessageLog($"COMPLETED ADDRESS SET {ConvertDataToString(DiagBusBytes)} IN {GenerationTimer.Elapsed.ToString("g")}");
             MessageWriter?.WriteMessageLog($"FOUND A TOTAL OF {AllMessagesToSend.Count} MESSAGES HAVE BEEN GENERATED");
-            MessageWriter?.WriteMessageLog("THIS SHOULD BE CONSISTENT ACROSS ALL ADDRESSES\n");
+            MessageWriter?.WriteMessageLog("THIS SHOULD BE CONSISTENT ACROSS ALL ADDRESSES");
 
             GenerationTimer.Stop();
 
             // Convert the list to an array and return out.
-            return AllMessagesToSend.ToArray();
+            PassThruMessageSet MsgSet = new PassThruMessageSet(Protocol, DiagBusBytes, AllMessagesToSend);
+            return MsgSet;
+
+            #endregion
         }
         /// <summary>
         /// Make a list of string items for the next perm list of bytes passed in.

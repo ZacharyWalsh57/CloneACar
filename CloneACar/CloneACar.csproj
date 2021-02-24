@@ -54,6 +54,7 @@
       <HintPath>..\packages\Newtonsoft.Json.12.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
     <Reference Include="System" />
+    <Reference Include="System.Configuration" />
     <Reference Include="System.Data" />
     <Reference Include="System.Xml" />
     <Reference Include="Microsoft.CSharp" />
@@ -82,6 +83,7 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="GlobalObjects.cs" />
+    <Compile Include="J2534Consumer\ExecuteModuleClone.cs" />
     <Compile Include="J2534Consumer\VehicleCloning\ISO15765_11BIT_Cloning.cs" />
     <Compile Include="J2534Consumer\VehicleCloning\VehicleCloningController.cs" />
     <Compile Include="J2534Consumer\VehicleInit\AutoIDController.cs" />
@@ -93,6 +95,7 @@
     <Compile Include="LoggingHelpers\Logger.cs" />
     <Compile Include="LoggingHelpers\SavePassThruMessages.cs" />
     <Compile Include="LoggingHelpers\TextLogTypes.cs" />
+    <Compile Include="LogicalHelpers\AppConfigHelpers.cs" />
     <Compile Include="LogicalHelpers\DataByteHelpers.cs" />
     <Compile Include="LogicalHelpers\PermutationHelpers.cs" />
     <Compile Include="MinimalJ2534\Verison0500\Exceptions\AppException.cs" />
@@ -153,7 +156,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Models\MessageSentAndResponse.cs" />
-    <Compile Include="Models\StrippedPTMessage.cs" />
+    <Compile Include="Models\PassThruMessageSet.cs" />
     <Compile Include="Models\Verison0404_DLLModel.cs" />
     <Compile Include="Models\Version0404Hardware.cs" />
     <Compile Include="Models\Version0404_ActiveHW.cs" />
@@ -182,7 +185,9 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <None Include="CloneACar.exe.config" />
+    <EmbeddedResource Include="CloneACar.exe.config">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
     <BootstrapperPackage Include=".NETFramework,Version=v4.7.2">

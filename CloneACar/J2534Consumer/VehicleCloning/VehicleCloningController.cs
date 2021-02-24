@@ -23,8 +23,9 @@ namespace CloneACar.J2534Consumer.VehicleCloning
 
         public void Clone15765_11Bit()
         {
-           var ISO15765_Cloner = new ISO15765_11BIT_Cloning();
-           ISO15765_Cloner.StartClone(); 
+            var ISO15765_Cloner = new ISO15765_11BIT_Cloning();
+            ISO15765_Cloner.DiagCommandMessages = ISO15765_Cloner.GenerateAllMessages();
+            ISO15765_Cloner.CloneAllModules();
         }
     }
 }

@@ -15,3 +15,4 @@ C:\Users\zwals\source\repos\ZacharyWalsh57\CloneACar\CloneACar\obj\Debug\CloneAC
 C:\Users\zwals\source\repos\ZacharyWalsh57\CloneACar\CloneACar\bin\Debug\Newtonsoft.Json.dll
 C:\Users\zwals\source\repos\ZacharyWalsh57\CloneACar\CloneACar\bin\Debug\Newtonsoft.Json.xml
 C:\Users\zwals\source\repos\ZacharyWalsh57\CloneACar\CloneACar\obj\Debug\CloneACar.csproj.CopyComplete
+C:\Users\zwals\source\repos\ZacharyWalsh57\CloneACar\CloneACar\bin\Debug\CloneACar.exe.config

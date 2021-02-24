@@ -38,11 +38,7 @@ namespace CloneACar.LogicalHelpers
                 }
 
                 // Make final list dupe less and set final perm list.
-                string NoSpacesPerm = FoundPerms[0].Replace(" ", String.Empty);
-                NextBaseMessage = Enumerable.Range(0, NoSpacesPerm.Length)
-                    .Where(x => x % 2 == 0)
-                    .Select(x => Convert.ToByte(NoSpacesPerm.Substring(x, 2), 16))
-                    .ToArray();
+                NextBaseMessage = DataByteHelpers.ConvertDataToByte(FoundPerms[0]);
             }
             catch { }
         }
@@ -51,7 +47,7 @@ namespace CloneACar.LogicalHelpers
     /// <summary>
     /// Permutation extension class.
     /// </summary>
-    internal static class SomeExtensions
+    internal static class PermutationExtensions
     {
         public static IEnumerable<IEnumerable<T>> GetPermutations<T>(this IEnumerable<T> enumerable)
         {
@@ -111,5 +107,4 @@ namespace CloneACar.LogicalHelpers
             return result;
         }
     }
-
 }

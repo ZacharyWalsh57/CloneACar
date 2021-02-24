@@ -6,6 +6,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using CloneACar.LogicalHelpers;
 using Minimal_J2534_0404;
 
 // Globals use
@@ -16,9 +17,10 @@ namespace CloneACar.LoggingHelpers
 {
     public class Logger
     {
-        private static string LogBase = @"C:\DrewTech\CloneACar\CloneACar_Logs\";   // Base output path.
-        public string PathToJSON = @"C:\Drewtech\CloneACar\CloneACar_JSON_Messages";
-        public string PathToComms = @"C:\Drewtech\CloneACar\CloneACar_SavedComms";
+        public static string LogBase;       // Base output path.
+        public string DebugFiles;           // Debug file path.
+        public string PathToJSON;           // JSON Path   
+        public string PathToComms;          // Comms Path
 
         private static bool IsMessageLog = false;               // Sets if we are logging clone messages or not.
         private static string BaseLogFile;                      // Log File for Main Logging.
@@ -60,18 +62,21 @@ namespace CloneACar.LoggingHelpers
 
         public Logger(bool IsMessageLogger = false, string ProtocolID = "", string LoggerName = "")
         {
+            // Get debug file paths.
+            var Paths = AppConfigHelper.ReturnDebugPaths();
+            LogBase = AppConfigHelper.ReturnConfigItem("BaseLogPath");
+            DebugFiles = Paths[0].Item2;
+            PathToJSON = Paths[1].Item2;
+            PathToComms = Paths[2].Item2;
+
             // Make LogDir If it does not exist.
             Directory.CreateDirectory(LogBase);
+            Directory.CreateDirectory(DebugFiles);
             Directory.CreateDirectory(PathToJSON);
             Directory.CreateDirectory(PathToComms);
 
             // Delete all old logs if we're in debug mode.
-            if (!IsMessageLogger)
-            {
-                EraseAllHistory(@"C:\Drewtech\CloneACar\CloneACar_Logs");
-                EraseAllHistory(@"C:\Drewtech\CloneACar\CloneACar_JSON_Messages");
-                // EraseAllHistory(@"C:\Drewtech\CloneACar\CloneACar_SavedComms");
-            }
+            if (!IsMessageLogger) { EraseAllHistory(); }
 
             // Save IsMessageLogger and Protocol.
             IsMessageLog = IsMessageLogger;
@@ -85,15 +90,13 @@ namespace CloneACar.LoggingHelpers
             // Setup new log file if needed.
             if (BaseLogFile == null)
             {
-                // Make Log Base Dir
-                LogBase += "CloneACar_" + strTime + "\\";
-
                 // Make a new Main Log file and set its path
                 BaseLogFile = "CloneACar_MainLog.txt";
-                BaseLogFilePath = LogBase + BaseLogFile;
+                BaseLogFilePath = DebugFiles + "CloneACar_" + strTime;
 
                 // Make the Base Log Dir if it does not exist.
-                Directory.CreateDirectory(LogBase);
+                Directory.CreateDirectory(BaseLogFilePath); 
+                BaseLogFilePath += "\\" + BaseLogFile;
             }
 
             // If we're doing message logging only.
@@ -110,12 +113,12 @@ namespace CloneACar.LoggingHelpers
                 // C:\DrewTech\Logs\CloneACar_YYYYMMDD_HHMMSS\MessageLogging\PROTOCOL\CloneACar_NAME_PROTOCOL_MESSAGES.txt
 
                 string PathBase = BaseLogFilePath.Substring(0, BaseLogFilePath.LastIndexOf(Path.DirectorySeparatorChar));
-                PathBase += Path.DirectorySeparatorChar + "MessageLogging" + Path.DirectorySeparatorChar + ProtocolID + "_Messages";
+                PathBase += Path.DirectorySeparatorChar + "Verbose_Logging"; // + Path.DirectorySeparatorChar + ProtocolID;
                 Directory.CreateDirectory(PathBase);
 
                 // Assign message log file values now.
                 if (LoggerName == "") { MessageLogFile = BaseLogFile.Split('_')[0] + "_" + ProtocolID + ".txt"; }
-                else { MessageLogFile = BaseLogFile.Split('_')[0] + "_" + LoggerName + "_" + ProtocolID + ".txt"; }
+                else { MessageLogFile = LoggerName + "_" + ProtocolID + ".txt"; }
                 MessageLogFilePath = PathBase + Path.DirectorySeparatorChar + MessageLogFile;
             }
 
@@ -137,30 +140,25 @@ namespace CloneACar.LoggingHelpers
         /// <summary>
         /// Removes all previous log files and dirs from the C:\DrewTech\Logs directory.
         /// </summary>
-        public void EraseAllHistory(string DirItem)
+        public void EraseAllHistory(int MaxDirs = 10)
         {
             // If not debug mode return out.
             if (!Debugger.IsAttached) { return; }
 
-            DirectoryInfo LogInfo = new DirectoryInfo(DirItem);
-            foreach (FileInfo FileItem in LogInfo.GetFiles())
+            // Get a list of all the dirs in the debug log folder.
+            var AllLogDirs = Directory.GetDirectories(DebugFiles).OrderBy(x => x).ToList();
+
+            // Delete the old dirs now if the name of the file is not in the new list.
+            int Index = 0;
+            while (Directory.GetDirectories(DebugFiles).ToList().Count > MaxDirs)
             {
-                if (FileItem.Name == BaseLogFile) { continue; }
-                if (FileItem.Name == MessageLogFile) { continue; }
-
-                try { FileItem.Delete(); }
+                string NextDir = AllLogDirs[Index];
+                try { Directory.Delete(NextDir, true); }
                 catch { }
-            }
 
-            foreach (DirectoryInfo Dir in LogInfo.GetDirectories())
-            {
-                if (Dir.Name == "CloneACar_JSON_Messages") { continue; }
-
-                try { Dir.Delete(true); }
-                catch { }
+                Index++;
             }
         }
-        
 
 
         /// <summary>
@@ -180,9 +178,9 @@ namespace CloneACar.LoggingHelpers
 
                 FileStreamWriter.WriteLine(
                     $"[{DateTime.Now:T}] " +
-                    $"::: [{NameOfCallingClass()}] " +
-                    $"::: [{PadBothEndsOfString(TypeOfLog.ToString(), 5)}] " +
-                    $"::: {LogString}"
+                    $"| [{NameOfCallingClass()}] " +
+                    $"| [{PadBothEndsOfString(TypeOfLog.ToString(), 5)}] " +
+                    $"| {LogString}"
                 );
 
                 FileStreamWriter.Close();
@@ -266,8 +264,8 @@ namespace CloneACar.LoggingHelpers
 
                     FileStreamWriter.WriteLine(
                         // $"[{DateTime.Now:T}] ::: " +
-                        $"[{PadBothEndsOfString(MessageType.ToString(), 5)}]" +
-                        $" :::{PadBothEndsOfString("MESSAGE [" + Counter.ToString("D3") + "]", 15)}" +
+                        $"[{PadBothEndsOfString(MessageType.ToString(), 5)}] " +
+                        $"|{PadBothEndsOfString("MESSAGE [" + Counter.ToString("D3") + "]", 15)}" +
                         $"{NewMessage}"
                     );
 

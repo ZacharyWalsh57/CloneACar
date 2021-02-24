@@ -48,12 +48,7 @@ namespace CloneACar.J2534Consumer.VehicleInit.AutoIDMethods
         public bool ReadVIN(out string VIN)
         {
             // Open the device and connect to an 11bit can channel.
-            if (!Device.isOpen) { Device.PTOpen(Device.name); }
-            if (Device.channels[0] != null)
-                if (Device.channels[0].protocol != ProtocolId.ISO15765)
-                    Device.PTDisconnect(0);
-            if (Device.channels[0] == null)
-                Device.PTConnect(0, ProtocolId.ISO15765, 0x00, 500000); 
+            WrappedCommands.OpenDevice(ProtocolId.ISO15765, 0x00, 500000);
 
             // Get channel ID.
             uint ChannelID = Device.channels[0].channelId;
@@ -79,20 +74,23 @@ namespace CloneACar.J2534Consumer.VehicleInit.AutoIDMethods
             AppLogger.WriteLog("SENT AND RECEIVE DONE FOR VIN NUMBER");
 
             // Write messages to logs and pull vin out.
-            foreach (var PTMessage in VinNumberMessages)
+            if (VinNumberMessages != null)
             {
-                if (PTMessage.dataLength <= 7) { continue; }
+                foreach (var PTMessage in VinNumberMessages)
+                {
+                    if (PTMessage.dataLength <= 7) { continue; }
 
-                byte[] VIN_ONLY = PTMessage.data.Skip(7).ToArray();
-                VIN = Encoding.Default.GetString(VIN_ONLY);
-                VIN_NUMBER = VIN;
+                    byte[] VIN_ONLY = PTMessage.data.Skip(7).ToArray();
+                    VIN = Encoding.Default.GetString(VIN_ONLY);
+                    VIN_NUMBER = VIN;
 
-                Device.PTDisconnect(0);
-                AppLogger.WriteLog($"FOUND A VIN OK! GOT A NEW VIN AS {VIN}", TextLogTypes.LogItemType.EXEOK);
-                AppLogger.WriteLog($"CLOSED DOWN THE CAN CHANNEL USED FOR AUTOID. MOVING ON", TextLogTypes.LogItemType.EXEOK);
+                    Device.PTDisconnect(0);
+                    AppLogger.WriteLog($"FOUND A VIN OK! GOT A NEW VIN AS {VIN}", TextLogTypes.LogItemType.EXEOK);
+                    AppLogger.WriteLog($"CLOSED DOWN THE CAN CHANNEL USED FOR AUTOID. MOVING ON", TextLogTypes.LogItemType.EXEOK);
 
-                // VinLogger11Bit.WriteLog("VIN NUMBER FOUND OK! --> " + VIN, TextLogTypes.LogItemType.EXEOK);
-                return true;
+                    // VinLogger11Bit.WriteLog("VIN NUMBER FOUND OK! --> " + VIN, TextLogTypes.LogItemType.EXEOK);
+                    return true;
+                }
             }
 
             // If no VIN Can be found return false and dump the messages.
