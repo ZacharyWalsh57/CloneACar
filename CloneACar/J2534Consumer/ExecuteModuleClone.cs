@@ -51,11 +51,12 @@ namespace CloneACar.J2534Consumer
             CommsLogger.WriteMessageLog($"INIT OF COMMS LOGGER WAS OK! FILE AND DIR STRUCTURE SEEMS RIGHT");
 
             SendAddress = ConvertDataToByte(AddressToSend);
-            ReadAddress = new byte[2] { SendAddress[0], (byte)(SendAddress[1] + 8) };
+            ReadAddress = new byte[2] { SendAddress[0], (byte)(SendAddress[1] + 9) };
 
             CommsLogger.WriteMessageLog($"PROTOCOL SET --> {ProtocolString}");
             CommsLogger.WriteMessageLog($"SEND ADDRESS --> {ConvertDataToString(SendAddress)}");
             CommsLogger.WriteMessageLog($"READ ADDRESS --> {ConvertDataToString(ReadAddress)}");
+            CommsLogger.WriteMessageLog("WAITING FOR MESSAGES TO BE SENT WITH REPLY VALUES NOW\n");
         }
         public ExecuteModuleClone(ProtocolId Proc, string ProcString, byte[] AddressToSend)
         {
@@ -145,15 +146,15 @@ namespace CloneACar.J2534Consumer
                 var ReadMsgs = new PassThruMsg[10];
 
                 // Read messages in now.
-                ReadMsgs = WrappedCommands.WriteAndRead(ChannelID, SendMsgs.ToList(), 8, CommsLogger);
+                ReadMsgs = WrappedCommands.WriteAndRead(ChannelID, SendMsgs.ToList(), 8, CommsLogger, true);
                 if (ReadMsgs != null)
                 {
-                    // Append it to the list of paired log comm lines.
-                    if (!MessageSendAndResponse.AddMessageTuple(SendMsgs, ReadMsgs))
-                    {
-                        AppLogger.WriteMessageLog("FAILED TO ADD THIS ITEM SET TO THE TUPLE LIST!");
-                        AppLogger.WriteMessageLog("THIS CAN BE DUE TO NULL MESSAGE COUNTS OR OTHER ISSUES");
-                    }
+                    // Write info on messages to log file.
+                    CommsLogger.WriteMessageLog(SendMsgs, MessageLogTypes.MessageTypes.PT_WRITE);
+                    CommsLogger.WriteMessageLog(ReadMsgs, MessageLogTypes.MessageTypes.PT_READS);
+
+                    // Write Send message out and append it to list of tuples.
+                    MessageSendAndResponse.AddMessageTuple(SendMsgs, ReadMsgs);
                 }
             }
 
@@ -161,6 +162,8 @@ namespace CloneACar.J2534Consumer
             FoundComms = MessageSendAndResponse.MessagePairs.Count > 0;
             return MessageSendAndResponse;
         }
+
+
         /// <summary>
         /// Auto establish new filters as messages come in. This is used pre clone running.
         /// When a message comes in, another filter program may be setup. 
@@ -174,15 +177,15 @@ namespace CloneACar.J2534Consumer
             switch (Protocol)
             {
                 case ProtocolId.ISO15765:
-                    if (SendAddress == "0x07 0xDF") { WrappedCommands.Setup11BitFlowCtl(ChannelID); }
+                    if (SendAddress == "0x07 0xDF" || SendAddress == "07 DF") { WrappedCommands.Setup11BitFlowCtl(ChannelID); }
                     else if (ChannelOrMsgFlags == 0x40)
                     {
                         byte[] LocalAddress = ConvertDataToByte(SendAddress);
                         byte[] RemoteAddress = new byte[2] { LocalAddress[0], (byte)(LocalAddress[1] + 8) };
 
                         string MaskMsg = "FF FF FF FF";
-                        string PattMsg = "00 00 " + ConvertDataToString(RemoteAddress);
-                        string FlowCtl = "00 00 " + ConvertDataToString(LocalAddress);
+                        string PattMsg = "00 00 " + ConvertDataToString(LocalAddress);
+                        string FlowCtl = "00 00 " + ConvertDataToString(RemoteAddress);
 
                         // AppLogger.WriteLog($"SETTING FILTER: {PattMsg} --> {FlowCtl}");
                         WrappedCommands.SetupFlowCtlFilter(ChannelID, Protocol, 0x40, MaskMsg, PattMsg, FlowCtl);
@@ -190,7 +193,7 @@ namespace CloneACar.J2534Consumer
                     break;
 
                 case ProtocolId.CAN:
-                    if (SendAddress == "0x18 0xDA")
+                    if (SendAddress == "0x18 0xDA" || SendAddress == "18 DA")
                     {
                         string MaskMsg = "FF FF 00 00";
                         string Pattern = "18 DA 00 00";

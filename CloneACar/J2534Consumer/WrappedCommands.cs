@@ -16,6 +16,10 @@ namespace CloneACar.J2534Consumer
 {
     public class WrappedCommands
     {
+        // Timeouts for reading and writing.
+        public static uint WriteTimeout = 100;
+        public static uint ReadTimeout = 150;
+
         /// <summary>
         /// This is the J2534 Device opened from our device discovery setup.
         /// Since it's kinda hard to pass this thing around, use this to snag it from globals.
@@ -74,9 +78,9 @@ namespace CloneACar.J2534Consumer
         /// <param name="MessagesToRead">Message Count to read back</param>
         /// <param name="MsgLogger">Logger object to pass in for message logging.</param>
         /// <returns>A PTMessage Array that contains response values.</returns>
-        public static PassThruMsg[] WriteAndRead(uint ChannelID, ProtocolId Protocol, string MessageToSend, uint MessageFlags, uint MessagesToRead, Logger MsgLogger = null)
+        public static PassThruMsg[] WriteAndRead(uint ChannelID, ProtocolId Protocol, string MessageToSend, uint MessageFlags, uint MessagesToRead, Logger MsgLogger = null, bool WaitForReply = false)
         {
-            return WriteAndRead(ChannelID, Protocol, new List<string> { MessageToSend }, MessageFlags, MessagesToRead, MsgLogger);
+            return WriteAndRead(ChannelID, Protocol, new List<string> { MessageToSend }, MessageFlags, MessagesToRead, MsgLogger, WaitForReply);
         }
         /// <summary>
         /// Writes and reads back messages on a specified PTChannel.
@@ -88,10 +92,10 @@ namespace CloneACar.J2534Consumer
         /// <param name="MessagesToRead">Message Count to read back</param>
         /// <param name="MsgLogger">Logger object to pass in for message logging.</param>
         /// <returns>A PTMessage Array that contains response values.</returns>
-        public static PassThruMsg[] WriteAndRead(uint ChannelID, ProtocolId Protocol, List<string> MessagesToSend, uint MessageFlags, uint MessagesToRead, Logger MsgLogger = null)
+        public static PassThruMsg[] WriteAndRead(uint ChannelID, ProtocolId Protocol, List<string> MessagesToSend, uint MessageFlags, uint MessagesToRead, Logger MsgLogger = null, bool WaitForReply = false)
         {
-            WriteMessage(ChannelID, Protocol, MessagesToSend, MessageFlags, MsgLogger);
-            return ReadMessages(ChannelID, MessagesToRead, MsgLogger);
+            WriteMessage(ChannelID, Protocol, MessagesToSend, MessageFlags, MsgLogger, WaitForReply);
+            return ReadMessages(ChannelID, MessagesToRead, MsgLogger, WaitForReply);
         }
         /// <summary>
         /// Writes and reads back messages on a specified PTChannel.
@@ -101,9 +105,9 @@ namespace CloneACar.J2534Consumer
         /// <param name="MessagesToRead">Message Count to read back</param>
         /// <param name="MsgLogger">Logger object to pass in for message logging.</param>
         /// <returns>A PTMessage Array that contains response values.</returns>
-        public static PassThruMsg[] WriteAndRead(uint ChannelID, PassThruMsg MessageToSend, uint MessagesToRead, Logger MsgLogger = null)
+        public static PassThruMsg[] WriteAndRead(uint ChannelID, PassThruMsg MessageToSend, uint MessagesToRead, Logger MsgLogger = null, bool WaitForReply = false)
         {
-            return WriteAndRead(ChannelID, new List<PassThruMsg> { MessageToSend }, MessagesToRead, MsgLogger);
+            return WriteAndRead(ChannelID, new List<PassThruMsg> { MessageToSend }, MessagesToRead, MsgLogger, WaitForReply);
         }
         /// <summary>
         /// Writes and reads back messages on a specified PTChannel.
@@ -113,10 +117,10 @@ namespace CloneACar.J2534Consumer
         /// <param name="MessagesToRead">Message Count to read back</param>
         /// <param name="MsgLogger">Logger object to pass in for message logging.</param>
         /// <returns>A PTMessage Array that contains response values.</returns>
-        public static PassThruMsg[] WriteAndRead(uint ChannelID, List<PassThruMsg> MessagesToSend, uint MessagesToRead, Logger MsgLogger = null)
+        public static PassThruMsg[] WriteAndRead(uint ChannelID, List<PassThruMsg> MessagesToSend, uint MessagesToRead, Logger MsgLogger = null, bool WaitForReply = false)
         {
-            WriteMessage(ChannelID, MessagesToSend, MsgLogger);
-            return ReadMessages(ChannelID, MessagesToRead, MsgLogger);
+            WriteMessage(ChannelID, MessagesToSend, MsgLogger, WaitForReply);
+            return ReadMessages(ChannelID, MessagesToRead, MsgLogger, WaitForReply);
         }
 
 
@@ -128,19 +132,22 @@ namespace CloneACar.J2534Consumer
         /// <param name="MessageToSend">Messages to write out.</param>
         /// <param name="MsgFlags">Message Flags.</param>
         /// <param name="MessageLogger">Logger to write messages to file.</param>
-        public static void WriteMessage(uint ChannelID, ProtocolId Protocol, string MessageToSend, uint MsgFlags, Logger MessageLogger = null)
+        public static void WriteMessage(uint ChannelID, ProtocolId Protocol, string MessageToSend, uint MsgFlags, Logger MessageLogger = null, bool WaitForReply = false)
         {
             var MessageItem = J2534Device.CreatePTMsgFromString(Protocol, MsgFlags, MessageToSend);
             uint MsgCount = 1;
 
-            AppLogger.WriteLog($"WRITING MESSAGE TO CHANNEL {ChannelID} --> {MessageToSend}");
-            MessageLogger?.WriteMessageLog(MessageToSend, MessageLogTypes.MessageTypes.PT_WRITE);
+            if (!WaitForReply) AppLogger.WriteLog($"WRITING MESSAGE TO CHANNEL {ChannelID} --> {MessageToSend}");
+            if (!WaitForReply) { MessageLogger?.WriteMessageLog(MessageToSend, MessageLogTypes.MessageTypes.PT_WRITE); }
+            
+            ClearTXAndRX(ChannelID, WaitForReply);
 
-            try { Device.JapiMarshal.PassThruWriteMsgs(ChannelID, MessageItem, ref MsgCount, 250); }
+            if (!WaitForReply) { MessageLogger?.WriteMessageLog(MessageItem, MessageLogTypes.MessageTypes.PT_WRITE); }
+            try { Device.JapiMarshal.PassThruWriteMsgs(ChannelID, MessageItem, ref MsgCount, WriteTimeout); }
             catch (J2534Exception ex)
             {
-                AppLogger.WriteLog($"ERROR WHILE SENDING MESSAGE --> {ex.Message}", TextLogTypes.LogItemType.ERROR);
-                AppLogger.WriteErrorLog(ex);
+                AppLogger.WriteLog($"ERROR WHILE SENDING MESSAGE --> {ex.lastErrorString}", TextLogTypes.LogItemType.ERROR);
+                if (!WaitForReply) AppLogger.WriteErrorLog(ex);
             }
         }
         /// <summary>
@@ -151,7 +158,7 @@ namespace CloneACar.J2534Consumer
         /// <param name="MessagesToSend">Messages to write out.</param>
         /// <param name="MsgFlags">Message Flags.</param>
         /// <param name="MessageLogger">Logger to write messages to file.</param>
-        public static void WriteMessage(uint ChannelID, ProtocolId Protocol, List<string> MessagesToSend, uint MsgFlags, Logger MessageLogger = null)
+        public static void WriteMessage(uint ChannelID, ProtocolId Protocol, List<string> MessagesToSend, uint MsgFlags, Logger MessageLogger = null, bool WaitForReply = false)
         {
             uint MsgCount = (uint)MessagesToSend.Count;
             var Messages = new PassThruMsg[MessagesToSend.Count];
@@ -160,19 +167,19 @@ namespace CloneACar.J2534Consumer
             {
                 string NextString = MessagesToSend[Count];
                 var NextMsg = J2534Device.CreatePTMsgFromString(Protocol, MsgFlags, NextString);
-                AppLogger.WriteLog($"WRITING MESSAGE [{Count}] TO CHANNEL {ChannelID} --> {NextString}");
+                if (!WaitForReply) AppLogger.WriteLog($"WRITING MESSAGE [{Count}] TO CHANNEL {ChannelID} --> {NextString}");
 
                 Messages[Count] = NextMsg;
             }
 
-            ClearTXAndRX(ChannelID);
+            ClearTXAndRX(ChannelID, WaitForReply);
 
-            MessageLogger?.WriteMessageLog(Messages, MessageLogTypes.MessageTypes.PT_WRITE);
-            try { Device.JapiMarshal.PassThruWriteMsgs(ChannelID, Messages, ref MsgCount, 250); }
+            if (!WaitForReply) { MessageLogger?.WriteMessageLog(Messages, MessageLogTypes.MessageTypes.PT_WRITE); }
+            try { Device.JapiMarshal.PassThruWriteMsgs(ChannelID, Messages, ref MsgCount, WriteTimeout); }
             catch (J2534Exception ex)
             {
-                AppLogger.WriteLog($"ERROR WHILE SENDING MESSAGE --> {ex.Message}", TextLogTypes.LogItemType.ERROR);
-                AppLogger.WriteErrorLog(ex);
+                AppLogger.WriteLog($"ERROR WHILE SENDING MESSAGE --> {ex.lastErrorString}", TextLogTypes.LogItemType.ERROR);
+                if (!WaitForReply) AppLogger.WriteErrorLog(ex);
             }
         }
         /// <summary>
@@ -183,18 +190,20 @@ namespace CloneACar.J2534Consumer
         /// <param name="MessageToSend">Messages to write out.</param>
         /// <param name="MsgFlags">Message Flags.</param>
         /// <param name="MessageLogger">Logger to write messages to file.</param>
-        public static void WriteMessage(uint ChannelID, PassThruMsg MessageToSend, Logger MessageLogger = null)
+        public static void WriteMessage(uint ChannelID, PassThruMsg MessageToSend, Logger MessageLogger = null, bool WaitForReply = false)
         {
             uint MsgCount = 1;
 
-            AppLogger.WriteLog($"WRITING MESSAGE TO CHANNEL {ChannelID} --> {MessageToSend}");
-            MessageLogger?.WriteMessageLog(MessageToSend, MessageLogTypes.MessageTypes.PT_WRITE);
+            if (!WaitForReply) AppLogger.WriteLog($"WRITING MESSAGE TO CHANNEL {ChannelID} --> {MessageToSend}");
+            if (!WaitForReply) { MessageLogger?.WriteMessageLog(MessageToSend, MessageLogTypes.MessageTypes.PT_WRITE); }
 
-            try { Device.JapiMarshal.PassThruWriteMsgs(ChannelID, MessageToSend, ref MsgCount, 250); }
+            ClearTXAndRX(ChannelID, WaitForReply);
+
+            try { Device.JapiMarshal.PassThruWriteMsgs(ChannelID, MessageToSend, ref MsgCount, WriteTimeout); }
             catch (J2534Exception ex)
             {
-                AppLogger.WriteLog($"ERROR WHILE SENDING MESSAGE --> {ex.Message}", TextLogTypes.LogItemType.ERROR);
-                AppLogger.WriteErrorLog(ex);
+                AppLogger.WriteLog($"ERROR WHILE SENDING MESSAGE --> {ex.lastErrorString}", TextLogTypes.LogItemType.ERROR); 
+                if (!WaitForReply) AppLogger.WriteErrorLog(ex);
             }
         }
         /// <summary>
@@ -204,7 +213,7 @@ namespace CloneACar.J2534Consumer
         /// <param name="Protocol">Protocol ID in use.</param>
         /// <param name="MessagesToSend">Messages to write out.</param>
         /// <param name="MessageLogger">Logger to write messages to file.</param>
-        public static void WriteMessage(uint ChannelID, List<PassThruMsg> MessagesToSend, Logger MessageLogger = null)
+        public static void WriteMessage(uint ChannelID, List<PassThruMsg> MessagesToSend, Logger MessageLogger = null, bool WaitForReply = false)
         {
             uint MsgCount = (uint)MessagesToSend.Count;
             var Messages = new PassThruMsg[MessagesToSend.Count];
@@ -213,19 +222,19 @@ namespace CloneACar.J2534Consumer
             {
                 var NextMsg = MessagesToSend[Count];
                 string MessageString = ConvertDataToString(NextMsg.data);
-                AppLogger.WriteLog($"WRITING MESSAGE [{Count}] TO CHANNEL {ChannelID} --> {MessageString}");
+                if (!WaitForReply) AppLogger.WriteLog($"WRITING MESSAGE [{Count}] TO CHANNEL {ChannelID} --> {MessageString}");
 
                 Messages[Count] = NextMsg;
             }
 
-            ClearTXAndRX(ChannelID);
+            ClearTXAndRX(ChannelID, WaitForReply);
 
-            MessageLogger?.WriteMessageLog(Messages, MessageLogTypes.MessageTypes.PT_WRITE);
-            try { Device.JapiMarshal.PassThruWriteMsgs(ChannelID, Messages, ref MsgCount, 250); }
+            if (!WaitForReply) { MessageLogger?.WriteMessageLog(Messages, MessageLogTypes.MessageTypes.PT_WRITE); }
+            try { Device.JapiMarshal.PassThruWriteMsgs(ChannelID, Messages, ref MsgCount, WriteTimeout); }
             catch (J2534Exception ex)
             {
-                AppLogger.WriteLog($"ERROR WHILE SENDING MESSAGE --> {ex.Message}", TextLogTypes.LogItemType.ERROR);
-                AppLogger.WriteErrorLog(ex);
+                AppLogger.WriteLog($"ERROR WHILE SENDING MESSAGE --> {ex.lastErrorString}", TextLogTypes.LogItemType.ERROR);
+                if (!WaitForReply) AppLogger.WriteErrorLog(ex);
             }
         }
         /// <summary>
@@ -235,29 +244,31 @@ namespace CloneACar.J2534Consumer
         /// <param name="MessagesToRead">Number of messages to pull back</param>
         /// <param name="MessageLogger">Logger to write messages out to file.</param>
         /// <returns></returns>
-        public static PassThruMsg[] ReadMessages(uint ChannelID, uint MessagesToRead, Logger MessageLogger = null)
+        public static PassThruMsg[] ReadMessages(uint ChannelID, uint MessagesToRead, Logger MessageLogger = null, bool WaitForReply = false)
         {
-            ClearTXAndRX(ChannelID);
-
             var MessagesRead = new PassThruMsg[MessagesToRead];
-            try { Device.JapiMarshal.PassThruReadMsgs(ChannelID, out MessagesRead, ref MessagesToRead, 250); }
+            try { Device.JapiMarshal.PassThruReadMsgs(ChannelID, out MessagesRead, ref MessagesToRead, ReadTimeout); }
             catch (J2534Exception ex)
             {
-                AppLogger.WriteLog($"ERROR WHILE READING MESSAGES --> {ex.Message}", TextLogTypes.LogItemType.ERROR);
-                AppLogger.WriteErrorLog(ex);
+                AppLogger.WriteLog($"ERROR WHILE READING MESSAGES --> {ex.lastErrorString}", TextLogTypes.LogItemType.ERROR);
+                if (!WaitForReply) AppLogger.WriteErrorLog(ex);
 
-                ClearTXAndRX(ChannelID);
+                ClearTXAndRX(ChannelID, WaitForReply);
                 return MessagesRead;
             }
 
-            AppLogger.WriteLog($"READ BACK MESSAGES OK! FOUND {MessagesRead.Length} MESSAGES IN TOTAL. FEEDING THEM OUT NOW");
-            MessageLogger?.WriteMessageLog(MessagesRead, MessageLogTypes.MessageTypes.PT_READS);
+            ClearTXAndRX(ChannelID, WaitForReply);
+
+            if (!WaitForReply) AppLogger.WriteLog($"READ BACK MESSAGES OK! FOUND {MessagesRead.Length} MESSAGES IN TOTAL. FEEDING THEM OUT NOW");
+            if (!WaitForReply) MessageLogger?.WriteMessageLog(MessagesRead, MessageLogTypes.MessageTypes.PT_READS);
+           
+            if (WaitForReply) { return MessagesRead; }
 
             for (int Count = 0; Count < MessagesRead.Length; Count++)
             {
                 string ByteConverted = ConvertDataToString(MessagesRead[Count].data);
                 string WriteThis = "MESSAGE [" + Count + "] --> " + ByteConverted;
-                AppLogger.WriteLog(WriteThis);
+                if (!WaitForReply) AppLogger.WriteLog(WriteThis);
             }
 
             return MessagesRead;
@@ -286,12 +297,12 @@ namespace CloneACar.J2534Consumer
                     PTMaskMsg, PTPatternMsg, PTFlowCtlMsg,
                     out uint FilterID);
 
-                //AppLogger.WriteLog($"SETUP A NEW FLOW CONTROL FILTER FOR CHANNEL {ChannelID} WITH AN ID OF {FilterID}");
+                // AppLogger.WriteLog($"SETUP A NEW FLOW CONTROL FILTER FOR CHANNEL {ChannelID} WITH AN ID OF {FilterID}");
                 AppLogger.WriteLog($"NEW FILTER [CH {ChannelID}] --> ID: {FilterID:D3} | MASK: {MaskMsg} | PATTERN: {PatternMsg} | FLOW CTL: {FlowCtlMsg}");
             }
             catch (J2534Exception Ex)
             {
-                AppLogger.WriteLog($"FAILED TO SETUP MESSAGE FILTER. --> {Ex.Message}");
+                AppLogger.WriteLog($"FAILED TO SETUP MESSAGE FILTER. --> {Ex.lastErrorString}");
                 AppLogger.WriteErrorLog(Ex);
             }
 
@@ -341,7 +352,7 @@ namespace CloneACar.J2534Consumer
             }
             catch (J2534Exception Ex)
             {
-                AppLogger.WriteLog($"FAILED TO SETUP MESSAGE FILTER. --> {Ex.Message}");
+                AppLogger.WriteLog($"FAILED TO SETUP MESSAGE FILTER. --> {Ex.lastErrorString}");
                 AppLogger.WriteErrorLog(Ex);
             }
 
@@ -354,20 +365,24 @@ namespace CloneACar.J2534Consumer
         /// or any messages are sent out to prevent Overflows.
         /// </summary>
         /// <param name="ChannelID">Channel ID In use.</param>
-        public static void ClearTXAndRX(uint ChannelID)
+        public static void ClearTXAndRX(uint ChannelID, bool WaitForReply = false)
         {
             Device.JapiMarshal.PassThruIoctl(ChannelID, IoctlId.CLEAR_RX_BUFFER);
             Device.JapiMarshal.PassThruIoctl(ChannelID, IoctlId.CLEAR_TX_BUFFER);
-            AppLogger.WriteLog($"TX AND RX BUFFERS CLEARED OUT OK");
+
+            if (!WaitForReply) AppLogger.WriteLog($"TX AND RX BUFFERS CLEARED OUT OK");
+            // AppLogger.WriteLog($"TX AND RX BUFFERS CLEARED OUT OK");
         }
         /// <summary>
         /// Clears out the filters currently active on the JBox for the provided channel.
         /// </summary>
         /// <param name="ChannelID">Channel ID In use.</param>
-        public static void ClearFilters(uint ChannelID)
+        public static void ClearFilters(uint ChannelID, bool WaitForReply = false)
         {
             Device.JapiMarshal.PassThruIoctl(ChannelID, IoctlId.CLEAR_MSG_FILTERS);
-            AppLogger.WriteLog($"MESSAGE FILTERS WERE CLEARED OUT OK");
+
+            if (!WaitForReply) AppLogger.WriteLog($"MESSAGE FILTERS WERE CLEARED OUT OK");
+            // AppLogger.WriteLog($"MESSAGE FILTERS WERE CLEARED OUT OK");
         }
     }
 }

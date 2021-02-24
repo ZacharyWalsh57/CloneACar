@@ -180,7 +180,7 @@ namespace CloneACar.LoggingHelpers
                     $"[{DateTime.Now:T}] " +
                     $"| [{NameOfCallingClass()}] " +
                     $"| [{PadBothEndsOfString(TypeOfLog.ToString(), 5)}] " +
-                    $"| {LogString}"
+                    $"::: {LogString}"
                 );
 
                 FileStreamWriter.Close();

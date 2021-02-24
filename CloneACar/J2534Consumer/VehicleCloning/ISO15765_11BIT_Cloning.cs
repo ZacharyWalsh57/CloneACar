@@ -39,7 +39,7 @@ namespace CloneACar.J2534Consumer.VehicleCloning
         public ISO15765_11BIT_Cloning()
         {
             // Make a clone logger.
-            MsgLogger = new Logger(true, "ISO15765-11BIT", "CLONER");
+            MsgLogger = new Logger(true, "ISO15765-11BIT", "MESSAGE_GENERATION");
             MsgLogger.WriteLog($"INIT OF 11BIT CAN LOGGER WAS OK! FILE AND DIR STRUCTURE SEEMS RIGHT");
 
             // Log whats going on.
@@ -109,6 +109,7 @@ namespace CloneACar.J2534Consumer.VehicleCloning
             AppLogger.WriteLog("STARTING GENERATION OF ALL MESSAGES FOR ALL ADDRESSES ON THE CAN BUS");
             AppLogger.WriteLog("WILL TAKE A LONG TIME. FRANKLY, I HAVE NO IDEA HOW LONG BUT LONG.");
             AppLogger.WriteLog($"ADDRESSES: {BusAddresses.Count} --- THREADS: {SplitBusAddresses.Count} --- KICKING OFF NOW...");
+            AppLogger.WriteLog("PLEASE SEE THE DEDICATED LOG FILE FOR MESSAGE GENERATION FOR MORE INFO ON PROGRESS\n");
 
             // Make a timer to time this whole thing.
             Stopwatch GenerationTimer = new Stopwatch();

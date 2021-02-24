@@ -39,17 +39,28 @@ namespace CloneACar.LogicalHelpers
         /// <returns></returns>
         public static string ConvertDataToString(byte[] DataToConvert, bool UseZeroX = false)
         {
-            try
+            if (DataToConvert == null)
             {
-                StringBuilder HexString = new StringBuilder(DataToConvert.Length * 2);
-                foreach (byte ByteItem in DataToConvert)
-                {
-                    if (UseZeroX) { HexString.Append("0x"); }
-                    HexString.AppendFormat("{0:x2} ".ToUpper(), ByteItem);
-                }
-                return HexString.ToString().Trim();
+                if (UseZeroX) return "0x00 0x00";
+                return "00 00";
             }
-            catch { return ConvertDataToString(DataToConvert, UseZeroX); }
+            for (int Count = 0; Count < 5; Count++)
+            {
+                try
+                {
+                    StringBuilder HexString = new StringBuilder(DataToConvert.Length * 2);
+                    foreach (byte ByteItem in DataToConvert)
+                    {
+                        if (UseZeroX) { HexString.Append("0x"); }
+                        HexString.AppendFormat("{0:x2} ".ToUpper(), ByteItem);
+                    }
+                    return HexString.ToString().Trim();
+                }
+                catch { }
+            }
+
+            if (UseZeroX) return "0x00 0x00";
+            return "00 00";
         }
         /// <summary>
         /// Converts a hex string item to a byte array.
@@ -131,9 +142,9 @@ namespace CloneACar.LogicalHelpers
                 ImportGenTimer.Start();
 
                 // Log File was found ok.
-                AppLogger.WriteLog($"ADDRESS FILE FOUND FOR {Address}. JSON PARSING IT NOW...");
+                // AppLogger.WriteLog($"ADDRESS FILE FOUND FOR {Address}. JSON PARSING IT NOW...");
                 MessageWriter?.WriteMessageLog($"ADDRESS FILE FOUND FOR {Address}. JSON PARSING IT NOW...");
-
+                
                 // Convert the JSON to string messages
                 PassThruMessageSet JSONMsgSet;
                 using (StreamReader FileReader = File.OpenText(FilePath))
@@ -143,13 +154,8 @@ namespace CloneACar.LogicalHelpers
                 }
 
                 // Log time stats to the debug logs.
-                AppLogger.WriteLog($"COMPLETED ADDRESS SET {ConvertDataToString(DiagBusBytes)} IN {ImportGenTimer.Elapsed.ToString("g")}");
-                AppLogger.WriteLog($"FOUND A TOTAL OF {JSONMsgSet.Messages.Count} MESSAGES HAVE BEEN GENERATED");
-                AppLogger.WriteLog("THIS SHOULD BE CONSISTENT ACROSS ALL ADDRESSES");
-
-                MessageWriter?.WriteMessageLog($"COMPLETED ADDRESS SET {ConvertDataToString(DiagBusBytes)} IN {ImportGenTimer.Elapsed.ToString("g")}");
-                MessageWriter?.WriteMessageLog($"FOUND A TOTAL OF {JSONMsgSet.Messages.Count} MESSAGES HAVE BEEN GENERATED");
-                MessageWriter?.WriteMessageLog("THIS SHOULD BE CONSISTENT ACROSS ALL ADDRESSES");
+                // AppLogger.WriteLog($"COMPLETED JSON PARSE OF ADDRESS SET {ConvertDataToString(DiagBusBytes)} --> {ImportGenTimer.Elapsed.ToString("g")} --> {JSONMsgSet.Messages.Count} MESSAGES");
+                MessageWriter?.WriteMessageLog($"COMPLETED JSON PARSE OF ADDRESS SET {ConvertDataToString(DiagBusBytes)} --> {ImportGenTimer.Elapsed.ToString("g")} --> {JSONMsgSet.Messages.Count} MESSAGES");
 
                 // Feed back the message list.
                 return JSONMsgSet;
@@ -170,7 +176,7 @@ namespace CloneACar.LogicalHelpers
 
             // Write Address info here.
             // AppLogger.WriteLog($"GETTING MESSAGES AT ADDRESS \"{ConvertDataToString(DiagBusBytes, true)}\" FOR ALL STANDARD PIDS...");
-            MessageWriter?.WriteMessageLog($"GETTING MESSAGES AT ADDRESS \"{ConvertDataToString(DiagBusBytes, true)}\" FOR ALL STANDARD PIDS...");
+            // AppLogger?.WriteMessageLog($"GETTING MESSAGES AT ADDRESS \"{ConvertDataToString(DiagBusBytes, true)}\" FOR ALL STANDARD PIDS...");
 
             // Loop all PID objects and make address commands.
             var Options = new ParallelOptions() { MaxDegreeOfParallelism = 5 };
@@ -178,9 +184,7 @@ namespace CloneACar.LogicalHelpers
             {
                 // Make First MsgBytes
                 byte[] FirstBytes = new byte[0];
-                if (Protocol == ProtocolId.ISO15765)
-                    if (!ProtocolString.Contains("29BIT")) { FirstBytes = new byte[5] { 00, 00, DiagBusBytes[0], DiagBusBytes[1], PidItem }; }
-                    else { FirstBytes = new byte[5] { 00, 00, DiagBusBytes[0], DiagBusBytes[1], PidItem }; }
+                if (Protocol == ProtocolId.ISO15765) { FirstBytes = new byte[5] { 00, 00, DiagBusBytes[0], DiagBusBytes[1], PidItem }; }
 
                 // Make a byte array here containing the 0x00 0x00, Address bytes, and PID value and store as string.
                 string PidAndAddress = ConvertDataToString(FirstBytes);
@@ -196,19 +200,12 @@ namespace CloneACar.LogicalHelpers
 
             // Write messages out to a JSON file now.
             SavePassThruMessages Saver = new SavePassThruMessages(ProtocolString, DiagBusBytes);
-            AppLogger.WriteLog($"SAVING TO JSON FILE NOW. FILE NAME: {Saver.FileName}");
             MessageWriter?.WriteMessageLog($"SAVING TO JSON FILE NOW. FILE NAME: {Saver.FileName}");
             Saver.SaveGeneratedMessages(AllMessagesToSend);
 
             // Log Time Taken.
-            AppLogger.WriteLog($"COMPLETED ADDRESS SET {ConvertDataToString(DiagBusBytes)} IN {GenerationTimer.Elapsed.ToString("g")}");
-            AppLogger.WriteLog($"FOUND A TOTAL OF {AllMessagesToSend.Count} MESSAGES HAVE BEEN GENERATED");
-            AppLogger.WriteLog("THIS SHOULD BE CONSISTENT ACROSS ALL ADDRESSES");
-
-            MessageWriter?.WriteMessageLog($"COMPLETED ADDRESS SET {ConvertDataToString(DiagBusBytes)} IN {GenerationTimer.Elapsed.ToString("g")}");
-            MessageWriter?.WriteMessageLog($"FOUND A TOTAL OF {AllMessagesToSend.Count} MESSAGES HAVE BEEN GENERATED");
-            MessageWriter?.WriteMessageLog("THIS SHOULD BE CONSISTENT ACROSS ALL ADDRESSES");
-
+            // AppLogger.WriteLog($"COMPLETED NEW JSON GENERATION OF ADDRESS SET {ConvertDataToString(DiagBusBytes)} --> {GenerationTimer.Elapsed.ToString("g")} --> {AllMessagesToSend.Count} MESSAGES");
+            MessageWriter?.WriteMessageLog($"COMPLETED NEW JSON GENERATION OF ADDRESS SET {ConvertDataToString(DiagBusBytes)} --> {GenerationTimer.Elapsed.ToString("g")} --> {AllMessagesToSend.Count} MESSAGES");
             GenerationTimer.Stop();
 
             // Convert the list to an array and return out.
@@ -237,7 +234,6 @@ namespace CloneACar.LogicalHelpers
             while (KeepSearching)
             {
                 // Store it as an int array for comparison and pull the lowest value to increase it by one.
-                BytesOfMessage[Array.IndexOf(BytesOfMessage, BytesOfMessage.Min())] += 1;
                 string ByteString = ConvertDataToString(BytesOfMessage);
 
                 // Add to list of strings and get our perms from the split string item.
@@ -250,10 +246,14 @@ namespace CloneACar.LogicalHelpers
 
                     // Add all the found perms into the list of all values and remove dupes.
                     AllValuesConverted.AddRange(PermHelper.FinalMessages);
+                    AllValuesConverted.Add(MessageStart + " " + MaxString.Replace("FF", "00"));
 
                     // Check for MaxSize
                     KeepSearching = ByteString != MaxString;
                     if (!KeepSearching) { break; }
+
+                    // Increase Counter Value.
+                    BytesOfMessage[Array.IndexOf(BytesOfMessage, BytesOfMessage.Min())] += 1;
                 }
                 catch { }
             }
