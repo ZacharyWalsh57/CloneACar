@@ -188,15 +188,28 @@ namespace CloneACar.LogicalHelpers
 
                 // Make a byte array here containing the 0x00 0x00, Address bytes, and PID value and store as string.
                 string PidAndAddress = ConvertDataToString(FirstBytes);
-                var NewMessages = GetNextSequence(MaxMsgLen, PidAndAddress, MessageWriter);
+                var NewMessages = GetNextSequence(MaxMsgLen, PidAndAddress, MessageWriter)
+                    .Select(Msg => Msg)
+                    .Distinct()
+                    .ToList();
 
                 // Loop all the strings and make messages based on the string values.
                 foreach (var Message in NewMessages)
                 {
+                    // Make a message from the string returned out.
                     var NextPTMsg = J2534Device.CreatePTMsgFromString(Protocol, MessageFlags, Message);
-                    AllMessagesToSend.Add(NextPTMsg);
+
+                    // Format based on command type.
+                    var FormattedPTMessage = new PassThruMsg(0);
+                    bool CanAdd = FormatMessage(Protocol, MessageFlags, NextPTMsg, out FormattedPTMessage);
+
+                    // Add if valid message type.
+                    if (CanAdd) { AllMessagesToSend.Add(FormattedPTMessage); }
                 }
             });
+
+            // Remove dupes from messages.
+            AllMessagesToSend = AllMessagesToSend.Select(Msg => Msg).Distinct().ToList();
 
             // Write messages out to a JSON file now.
             SavePassThruMessages Saver = new SavePassThruMessages(ProtocolString, DiagBusBytes);
@@ -260,6 +273,37 @@ namespace CloneACar.LogicalHelpers
 
             // Return the list of strings.
             return AllValuesConverted;
+        }
+        
+        
+        /// <summary>
+        /// Converts a permuated message into a message used for a specific protocol.
+        /// </summary>
+        /// <param name="Protocol">Protocol in use.</param>
+        /// <param name="MsgFlags">Flags of message.</param>
+        /// <param name="Message">Message In</param>
+        /// <param name="NewMessage">Message Modified.</param>
+        /// <returns>True if message can be added, false if not.</returns>
+        private static bool FormatMessage(ProtocolId Protocol, uint MsgFlags, PassThruMsg Message, out PassThruMsg NewMessage)
+        {
+            NewMessage = Message;
+            if (Protocol == ProtocolId.ISO15765)
+            {
+                var TempData = Message.data;
+                int LastIndex = Array.FindLastIndex(TempData, MatchByte => MatchByte != 0);
+                Array.Resize(ref TempData, LastIndex + 2);
+
+                NewMessage.txFlags = 0x00;
+                if (TempData.Length <= 6)
+                {
+                    NewMessage.data = TempData;
+                    NewMessage.dataLength = (uint)TempData.Length;
+                    NewMessage.txFlags = 0x40;
+                }
+                return true;
+            }
+
+            return false;
         }
     }
 }

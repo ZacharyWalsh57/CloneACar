@@ -20,21 +20,26 @@ namespace CloneACar
         public static AutoIDController AutoID = new AutoIDController();        // Used to autoid a connected vehicle if wanted.
         public static VehicleCloningController VehicleCloner;                  // Used for cloning vehicles.
 
-        public GlobalObjects()
+        public static List<ModuleCommunicationResults> FinalCloneResults;      // Holds all the module comms for anything that worked in clone.
+
+        public static void SetupGlobalObjects()
         {
             // Init the logger.
             AppLogger = new Logger();
             AppLogger.WriteLog("LOGGER OBJECT WAS SETUP OK!");
 
-            // Init our 0404 Items
-            SetupV0404DLLsAndDevices();
+            // Init Misc Items
+            FinalCloneResults = new List<ModuleCommunicationResults>();
+
+            // Init our 0404 Items - This is done via MainWindow Now.
+            // SetupV0404DLLsAndDevices();
         }
 
         /// <summary>
         /// Setup new V0404 Device and DLL object.
         /// This picks the first found DLL and device and stores them in the Version0404Objects class.
         /// </summary>
-        private static void SetupV0404DLLsAndDevices()
+        public static void SetupV0404DLLsAndDevices()
         {
             // Init the HW object. This holds all DLLs, All Devices, 
             // along with the selected DLL and Device. This is accessed 

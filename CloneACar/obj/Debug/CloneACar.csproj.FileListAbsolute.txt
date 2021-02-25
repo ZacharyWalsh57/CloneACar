@@ -16,3 +16,14 @@ C:\Users\zwals\source\repos\ZacharyWalsh57\CloneACar\CloneACar\bin\Debug\Newtons
 C:\Users\zwals\source\repos\ZacharyWalsh57\CloneACar\CloneACar\obj\Debug\CloneACar.csproj.CopyComplete
 C:\Users\zwals\source\repos\ZacharyWalsh57\CloneACar\CloneACar\bin\Debug\CloneACar.exe.config
 C:\Users\zwals\source\repos\ZacharyWalsh57\CloneACar\CloneACar\obj\Debug\CloneACar.csprojAssemblyReference.cache
+C:\Users\zwals\source\repos\ZacharyWalsh57\CloneACar\CloneACar\bin\Debug\ControlzEx.dll
+C:\Users\zwals\source\repos\ZacharyWalsh57\CloneACar\CloneACar\bin\Debug\MahApps.Metro.dll
+C:\Users\zwals\source\repos\ZacharyWalsh57\CloneACar\CloneACar\bin\Debug\Microsoft.Xaml.Behaviors.dll
+C:\Users\zwals\source\repos\ZacharyWalsh57\CloneACar\CloneACar\bin\Debug\ControlzEx.pdb
+C:\Users\zwals\source\repos\ZacharyWalsh57\CloneACar\CloneACar\bin\Debug\ControlzEx.xml
+C:\Users\zwals\source\repos\ZacharyWalsh57\CloneACar\CloneACar\bin\Debug\MahApps.Metro.pdb
+C:\Users\zwals\source\repos\ZacharyWalsh57\CloneACar\CloneACar\bin\Debug\MahApps.Metro.xml
+C:\Users\zwals\source\repos\ZacharyWalsh57\CloneACar\CloneACar\bin\Debug\Microsoft.Xaml.Behaviors.pdb
+C:\Users\zwals\source\repos\ZacharyWalsh57\CloneACar\CloneACar\bin\Debug\Microsoft.Xaml.Behaviors.xml
+C:\Users\zwals\source\repos\ZacharyWalsh57\CloneACar\CloneACar\bin\Debug\de\MahApps.Metro.resources.dll
+C:\Users\zwals\source\repos\ZacharyWalsh57\CloneACar\CloneACar\obj\Debug\App.baml

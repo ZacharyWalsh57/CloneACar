@@ -167,8 +167,14 @@ namespace CloneACar.J2534Consumer.VehicleCloning
                     AppLogger.WriteLog($"FOUND COMMS AT ADDRESS SET {SendAddr} OK!");
                     AppLogger.WriteLog($"LOOKS LIKE A TOTAL OF {ModuleRespSet.MessagePairs.Count} MESSAGES WERE PAIRED OFF");
                     ModuleCommResults.Add(ModuleRespSet);
+
+                    var CommsSaver = new SavePassThruMessages(MessageSet.AddressBytes, VIN_NUMBER);
+                    AppLogger.WriteLog($"SAVING MESSAGES TO JSON OUTPUT OBJECT IN FILE {CommsSaver.FileName}");
+                    CommsSaver.SaveModuleCommunications(ModuleRespSet);
+
+                    AppLogger.WriteLog($"MODULE COMMS WERE SAVED OK!");
                 }
-                else { AppLogger.WriteLog("FAILED TO FIND COMMS AT ADDRESS SET 0x07 0xDF!"); }
+                else { AppLogger.WriteLog($"FAILED TO FIND COMMS AT ADDRESS SET {SendAddr}!"); }
             }
 
             // Clear filters and buffers.

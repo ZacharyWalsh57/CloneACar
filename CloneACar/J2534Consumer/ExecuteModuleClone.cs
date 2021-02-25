@@ -149,12 +149,20 @@ namespace CloneACar.J2534Consumer
                 ReadMsgs = WrappedCommands.WriteAndRead(ChannelID, SendMsgs.ToList(), 8, CommsLogger, true);
                 if (ReadMsgs != null)
                 {
-                    // Write info on messages to log file.
-                    CommsLogger.WriteMessageLog(SendMsgs, MessageLogTypes.MessageTypes.PT_WRITE);
-                    CommsLogger.WriteMessageLog(ReadMsgs, MessageLogTypes.MessageTypes.PT_READS);
+                    // Check for only one message in 11 BIT CAN or other conditions.
+                    bool CanAdd = true;
+                    if (ReadMsgs.Length == 1)
+                        CanAdd = ReadMsgs[0].protocolId == ProtocolId.ISO15765 && ReadMsgs[0].dataLength > 4;
 
-                    // Write Send message out and append it to list of tuples.
-                    MessageSendAndResponse.AddMessageTuple(SendMsgs, ReadMsgs);
+                    if (CanAdd)
+                    {
+                        // Write info on messages to log file.
+                        CommsLogger.WriteMessageLog(SendMsgs, MessageLogTypes.MessageTypes.PT_WRITE);
+                        CommsLogger.WriteMessageLog(ReadMsgs, MessageLogTypes.MessageTypes.PT_READS);
+
+                        // Write Send message out and append it to list of tuples.
+                        MessageSendAndResponse.AddMessageTuple(SendMsgs, ReadMsgs);
+                    }
                 }
             }
 
@@ -177,6 +185,11 @@ namespace CloneACar.J2534Consumer
             switch (Protocol)
             {
                 case ProtocolId.ISO15765:
+                    WrappedCommands.SetupPassOrBlockFilter(
+                        ChannelID, Protocol, FilterDef.PASS_FILTER, 
+                        0x00, "FF FF 00 00", "00 00 00 00"
+                    );
+
                     if (SendAddress == "0x07 0xDF" || SendAddress == "07 DF") { WrappedCommands.Setup11BitFlowCtl(ChannelID); }
                     else if (ChannelOrMsgFlags == 0x40)
                     {

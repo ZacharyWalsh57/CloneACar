@@ -49,7 +49,6 @@ namespace CloneACar.J2534Consumer.VehicleInit
                 AppLogger.WriteLog("GOT A GOOD VIN NUMBER FROM THE 11 BIT CAN CONTROLLER", TextLogTypes.LogItemType.EXEOK);
                 AppLogger.WriteLog($"VIN NUMBER IS RECORDED AS: {VIN}", TextLogTypes.LogItemType.EXEOK);
 
-                VehicleCloner = new VehicleCloningController(this);
                 return true;
             }
 
